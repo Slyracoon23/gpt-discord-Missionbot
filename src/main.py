@@ -54,6 +54,29 @@ async def on_ready():
         completion.MY_BOT_EXAMPLE_CONVOS.append(Conversation(messages=messages))
     await tree.sync()
 
+## Create a report page
+#/report message:
+@tree.command(name="report", description="Create a report page image and url link")
+async def report_command(int: discord.Interaction, user: discord.Member):
+    try:
+        # Make an embed for the report page
+        embed = discord.Embed(
+            description=f"""
+            <@{user.id}> wants a reportcard! 🤖💬
+            
+            **Report Card** 📝
+            """,
+            color=discord.Color.dark_teal(),
+        )
+        
+        embed.add_field(name=f"{user.name}'s Report Card" ,value="[Click here to view your report]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
+        
+        await int.response.send_message(embed=embed)
+            
+    except Exception as e:
+        logger.error(f"Report command error: {e}")
+        return
+
 
 # /chat message:
 @tree.command(name="chat", description="Create a new thread for conversation")
