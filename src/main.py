@@ -89,10 +89,18 @@ async def chat_command(int: discord.Interaction, message: str):
                 )
                 return
 
+            # Add thread dialog description
             embed = discord.Embed(
-                description=f"<@{user.id}> wants to chat! 🤖💬",
+                description=f"""
+                <@{user.id}> wants to chat! 🤖💬
+                
+                :white_check_mark: --->  End chat and submit prompt
+                
+                :x: --->  End chat and delete prompt
+                """,
                 color=discord.Color.green(),
             )
+            
             embed.add_field(name=user.name, value=message)
 
             if len(flagged_str) > 0:
