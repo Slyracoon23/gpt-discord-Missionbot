@@ -294,6 +294,8 @@ async def on_message(message: DiscordMessage):
                         color=discord.Color.green(),
                     )
                 )
+                
+                 return
                     
             
             elif thread.last_message.content.lower() == STOP_MESSAGE:
@@ -304,6 +306,8 @@ async def on_message(message: DiscordMessage):
                         color=discord.Color.red(),
                     )
                 )
+                 
+                 return
                  
             else:
                 # User needs to send a valid closing message
