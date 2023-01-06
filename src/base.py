@@ -34,6 +34,8 @@ class Conversation:
 class Config:
     name: str
     instructions: str
+    summarisation_instructions: str
+    example_summarisation_conversation: List[Conversation]
     example_conversations: List[Conversation]
 
 

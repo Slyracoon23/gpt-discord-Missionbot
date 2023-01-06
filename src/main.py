@@ -16,10 +16,11 @@ from src.utils import (
     should_block,
     close_thread,
     is_last_message_stale,
+    is_last_message_stop_message,
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, process_response
+from src.completion import generate_completion_response, generate_summarisation_response, process_response
 from src.moderation import (
     moderate_message,
     send_moderation_blocked_message,
@@ -152,7 +153,7 @@ async def chat_command(int: discord.Interaction, message: str):
 # calls for each message
 @client.event
 async def on_message(message: DiscordMessage):
-    try:
+    try:         
         # block servers not in allow list
         if should_block(guild=message.guild):
             return
@@ -250,11 +251,47 @@ async def on_message(message: DiscordMessage):
         channel_messages = [x for x in channel_messages if x is not None]
         channel_messages.reverse()
 
-        # generate the response
-        async with thread.typing():
-            response_data = await generate_completion_response(
-                messages=channel_messages, user=message.author
-            )
+        # if the last message is an stop/signal message, then summarise the conversation
+        if is_last_message_stop_message(
+            interaction_message=message,
+            last_message=thread.last_message,
+            bot_id=client.user.id,
+        ):
+            COMPLETED_MESSAGE = '✅'
+            STOP_MESSAGE = '❌'
+            if thread.last_message.content.lower() == COMPLETED_MESSAGE :
+                # generate closing message and summarise
+                async with thread.typing():
+                    response_data = await generate_summarisation_response(
+                        messages=channel_messages, user=message.author
+                    )
+                    
+            
+            elif thread.last_message.content.lower() == STOP_MESSAGE:
+                # generate closing message and Exit
+                 await thread.send(
+                    embed=discord.Embed(
+                        description=f"❌ **{message.author}'s Conversation has been deleted.**",
+                        color=discord.Color.red(),
+                    )
+                )
+                 
+            else:
+                # User needs to send a valid closing message
+                await thread.send(
+                    embed=discord.Embed(
+                        description=f"**Invalid response** - Please send ✅ or ❌",
+                        color=discord.Color.yellow(),
+                    )
+                )
+                return
+        
+        else:
+            # generate standard response
+            async with thread.typing():
+                response_data = await generate_completion_response(
+                    messages=channel_messages, user=message.author
+                )
 
         if is_last_message_stale(
             interaction_message=message,
