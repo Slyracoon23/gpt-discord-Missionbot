@@ -17,6 +17,7 @@ from src.utils import (
     close_thread,
     is_last_message_stale,
     is_last_message_stop_message,
+    is_summarize_active,
     discord_message_to_message,
 )
 from src import completion
@@ -94,6 +95,8 @@ async def chat_command(int: discord.Interaction, message: str):
             embed = discord.Embed(
                 description=f"""
                 <@{user.id}> wants to chat! 🤖💬
+                
+                :writing_hand:  ---> Summarize the conversation
                 
                 :white_check_mark: --->  End chat and submit prompt
                 
@@ -259,12 +262,15 @@ async def on_message(message: DiscordMessage):
         ):
             COMPLETED_MESSAGE = '✅'
             STOP_MESSAGE = '❌'
+                    
             if thread.last_message.content.lower() == COMPLETED_MESSAGE :
                 # generate closing message and summarise
-                async with thread.typing():
-                    response_data = await generate_summarisation_response(
-                        messages=channel_messages, user=message.author
+                 await thread.send(
+                    embed=discord.Embed(
+                        description=f"**{message.author}'s message has been Submitted!**",
+                        color=discord.Color.green(),
                     )
+                )
                     
             
             elif thread.last_message.content.lower() == STOP_MESSAGE:
@@ -285,9 +291,19 @@ async def on_message(message: DiscordMessage):
                     )
                 )
                 return
+              
+        elif is_summarize_active(
+                messages=channel_messages,
+            ): 
+            # generate summarized response mode     
+            async with thread.typing():
+                response_data = await generate_summarisation_response(
+                    messages=channel_messages, user=message.author
+                )
+
         
         else:
-            # generate standard response
+            # generate standard response mode
             async with thread.typing():
                 response_data = await generate_completion_response(
                     messages=channel_messages, user=message.author
