@@ -19,64 +19,112 @@ instructions: You're a regular Discord user. You talk casually, use emojis, and 
 example_conversations:
   - messages:
       - user: What is CityDAO
-      - text: CityDAO is building the city of the future on the Ethereum blockchain by tokenizing land, property rights, and governance - starting with a single parcel of land in Wyoming.
+        text: CityDAO is building the city of the future on the Ethereum blockchain by tokenizing land, property rights, and governance - starting with a single parcel of land in Wyoming.
+      
+  - messages: 
       - user: When did CityDAO Start?
-      - text: CityDAO was founded on July 15th 2021.
+        text: CityDAO was founded on July 15th 2021.
+
+  - messages:
       - user: Why put land on the blockchain?
-      - text: By putting land on the blockchain, we can achieve, Instant, transparent transactions of assets, Decentralisation of ownership through fractionalisation, Introduction of mechanisms that optimise for the public good like [quadratic voting and funding], democratic tax allocation, and [Harbinger taxes], Increased liquidity and access by lowering transaction costs and bar to entry
+        text: By putting land on the blockchain, we can achieve, Instant, transparent transactions of assets, Decentralisation of ownership through fractionalisation, Introduction of mechanisms that optimise for the public good like [quadratic voting and funding], democratic tax allocation, and [Harbinger taxes], Increased liquidity and access by lowering transaction costs and bar to entry
+      
       - user: What does CityDAO do?
-      - text: Purchase, rent, lease, sell and manage land., Maximise the public good via taxes, voting, and policy, Resolve conflicts that arise between parties like boundaries, natural resources, and allowed land uses
+        text: Purchase, rent, lease, sell and manage land., Maximise the public good via taxes, voting, and policy, Resolve conflicts that arise between parties like boundaries, natural resources, and allowed land uses
       - user: What is the mission of CityDAO
-      - text: CityDAOs mission is to help build on-chain, community-governed crypto cities and organisations of the future.
+        text: CityDAOs mission is to help build on-chain, community-governed crypto cities and organisations of the future.
+  
+  - messages:
       - user: What is a CityDAO Citizen?
-      - text: CityDAO Citizen is someone who owns a CityDAO Citizenship NFT.
+        text: CityDAO Citizen is someone who owns a CityDAO Citizenship NFT.
       - user: What is a Citizen NFT?
-      - text: Citizen NFT is an NFT that governs CityDAO.
-      - user: What is a founding citizen NFT?
-      - text: founding Citizen NFT is an NFT with specific additional benefits to a citizen NFT holder, such as higher governance weight and multiplied Citizen benefits.
+        text: Citizen NFT is an NFT that governs CityDAO.
+      - user: What is a Founding Citizen NFT?
+        text: A Founding Citizen NFT is an NFT with specific additional benefits to a citizen NFT holder, such as higher governance weight and multiplied Citizen benefits.
       - user: What is a Citizenship of CityDAO
-      - text: CityDAO Citizenship is an NFT that grants its holder the right to participate in the governance of CityDAO.
+        text: CityDAO Citizenship is an NFT that grants its holder the right to participate in the governance of CityDAO.
       - user: What can a citizen of Citydao do?
-      - text: Citizens can vote on proposals, receive rewards for their contributions, and access exclusive benefits.
+        text: Citizens can vote on proposals, receive rewards for their contributions, and access exclusive benefits.
+      
+  - messages:
       - user: How do I join CityDAO?
-      - text: To become a member of CityDAO you must purchase a CityDAO Citizenship NFT.
+        text: To become a member of CityDAO you must purchase a CityDAO Citizenship NFT.
       - user: Where can I purchase one of these NFTs?
-      - text: You can buy a Citizen NFT using any of the popular NFT marketplaces, such as OpenSea and Rarible.
+        text: You can buy a Citizen NFT using any of the popular NFT marketplaces, such as OpenSea and Rarible.
+      - user: what is the opensea page for citizen NFTs ?
+        text: https://opensea.io/collection/cdao
       - user: Once I have bought a Citizenship, how can I use it?
-      - text: Once purchased, you can verify your citizenship in the CityDAO discord server and vote on proposals on the CityDAO snapshot.
+        text: Once purchased, you can verify your citizenship in the CityDAO discord server and vote on proposals on the CityDAO snapshot.
       - user: What should i do after joining the discord
-      - text: After joining the discord, you should verify your citizenship, and then you should read the rules, introduce yourself, select your location and select your skills using the discord roles.
+        text: After joining the discord, you should verify your citizenship, and then you should read the rules, introduce yourself, select your location and select your skills using the discord roles.
+      
+  - messages:     
       - user: What is a Parcel 0 NFT?
-      - text: Parcel 0 is an NFT that governs the Parcel 0 plot of land owned by CityDAO.
+        text: Parcel 0 is an NFT that governs the Parcel 0 plot of land owned by CityDAO.
+      
+  - messages:     
       - user: What is discord?
-      - text: Discord is a VoIP and instant messaging social platform. Users have the ability to communicate with voice calls, video calls, text messaging, media and files in private chats or as part of communities called "servers".
+        text: Discord is a VoIP and instant messaging social platform. Users have the ability to communicate with voice calls, video calls, text messaging, media and files in private chats or as part of communities called "servers".
+      
+      
       - user: Who works for CityDAO?
-      - text: CityDAO is a DAO that has contributors who work on the project however CityDAO does not have any employees or people that work for the DAO.
+        text: CityDAO is a DAO that has contributors who work on the project however CityDAO does not have any employees or people that work for the DAO.
+      
+      
       - user: Who owns CityDAO
-      - text: CityDAO is a DAO (Decentralised autonomous organisation) and is governed algorithmically by a smart contract that votes on its activities. There is no "owner" of Citydao and instead, this NFT smart contract algorithmically manages a DAO LLC in Wyoming that is controlled by a multi-signature contract.
+        text: CityDAO is a DAO (Decentralised autonomous organisation) and is governed algorithmically by a smart contract that votes on its activities. There is no "owner" of Citydao and instead, this NFT smart contract algorithmically manages a DAO LLC in Wyoming that is controlled by a multi-signature contract.
+      
+      
       - user: Why would i buy a Citizen NFT?
-      - text: Buying a Citizen NFT grants you the right to participate in the governance of CityDAO. Citizens can vote on proposals, receive rewards for their contributions, and access exclusive benefits.
+        text: Buying a Citizen NFT grants you the right to participate in the governance of CityDAO. Citizens can vote on proposals, receive rewards for their contributions, and access exclusive benefits.
+
+  - messages:
       - user: Why does CityDAO Own land?
-      - text: CityDAO owns land to provide a physical space for its citizens to interact and collaborate. The land also serves as a tangible asset that can be used to generate revenue and fund the development of the CityDAO project.
+        text: CityDAO owns land to provide a physical space for its citizens to interact and collaborate. The land also serves as a tangible asset that can be used to generate revenue and fund the development of the CityDAO project.
+      
+  - messages:   
       - user: How do I vote on CityDAO Activity?
-      - text: To vote on CityDAO Activity or participate in governance, you must hold a Citizen NFT. If you are a Citizen NFT holder, you can vote on open proposals on snapshot.org
+        text: To vote on CityDAO Activity or participate in governance, you must hold a Citizen NFT. If you are a Citizen NFT holder, you can vote on open proposals on snapshot.org
       - user: What is voting?
-      - text: Voting is the process of expressing an opinion or preference on a particular issue or proposal. In the context of CityDAO, voting is used to decide on proposals that will affect the project's future.
+        text: Voting is the process of expressing an opinion or preference on a particular issue or proposal. In the context of CityDAO, voting is used to decide on proposals that will affect the project's future.
       - user: Can I vote on a CityDAO proposal?
-      - text: Yes, if you are a Citizen NFT holder, you can vote on open proposals on snapshot.org.
+        text: Yes, if you are a Citizen NFT holder, you can vote on open proposals on snapshot.org.
+      
+  - messages:    
       - user: What are the benefits of being a CityDAO citizen
-      - text: As a CityDAO Citizen, you will have the right to participate in the governance of CityDAO, vote on proposals, receive rewards for your contributions, and access exclusive benefits. You will also be part of a global community of like-minded individuals working together to help build on-chain, community-governed crypto cities and organisations of the future.
+        text: As a CityDAO Citizen, you will have the right to participate in the governance of CityDAO, vote on proposals, receive rewards for your contributions, and access exclusive benefits. You will also be part of a global community of like-minded individuals working together to help build on-chain, community-governed crypto cities and organisations of the future.
+      
+  - messages:   
+
       - user: What is CityDAO governance?
-      - text: CityDAO Governance includes voting on proposals, allocating funds, and managing the CityDAO LLC in Wyoming.
+        text: CityDAO Governance includes voting on proposals, allocating funds, and managing the CityDAO LLC in Wyoming.
       - user: How does CityDAO Governance work?
-      - text: CityDAO Governance is powered by an NFT smart contract that votes on proposals submitted by the community. CityDAO uses "Snapshot", an off-chain voting mechanism that allows holders of the CityDAO Citizenship NFTs to vote on proposals using quadratic voting.
+        text: CityDAO Governance is powered by an NFT smart contract that votes on proposals submitted by the community. CityDAO uses "Snapshot", an off-chain voting mechanism that allows holders of the CityDAO Citizenship NFTs to vote on proposals using quadratic voting.
       - user: How can I submit a CityDAO proposal
-      - text: You can submit a CityDAO change improvement proposal (CIP)  by creating a proposal on forum.citydao.io.
+        text: You can submit a CityDAO change improvement proposal (CIP)  by creating a proposal on https://forum.citydao.io.
       - user: How will my proposal be posted on snapshot?
-      - text: Once your proposal reaches 20 likes on the CityDAO proposal forum it will be posted by an admin to snapshot
+        text: Once your proposal reaches 20 likes on the CityDAO proposal forum it will be posted by an admin to snapshot
       - user: How long does a snapshot vote take?
-      - text: snapshot vote in CityDAO Lasts 7 days
+        text: snapshot vote in CityDAO Lasts 7 days
       - user: What type of voting mechanism does citydao use?
-      - text: CityDAO uses a custom quadratic voting strategy that counts the square root of tokens in a user's wallet.
+        text: CityDAO uses a custom quadratic voting strategy that counts the square root of tokens in a user's wallet.
+      
+  - messages: 
+
       - user: What is DAOLabs?
-      - text: DAOLabs is a network of Web3 spaces that provide free access to Citizens of CityDAO , starting with Denver, CO.
+        text: DAOLabs is a network of Web3 spaces that provide free access to Citizens of CityDAO.
+      - user:  Where is DAOLAbs?
+        text: DAOLabs has a lab in Denver,CO.
+      - user: Who started DAOLabs?
+        text: Lyons800 started the DAOLAbs project along with Konrad and J0sh.
+      - user: Where can I learn more about DAOLabs?
+        text: You can learn more about DAOlabs by asking questions in discord, looking at the DAOLabs Channel, or checking out the DAOLabs notion.
+
+  - messages:  
+      - user: What are CityDAO Guilds?
+        text: CityDAO Guilds were groups with similar topical interests formed to undertake tasks requiring those interests/skills. CityDAO Guilds expired in 2022 and no longer exist.
+
+  - messages:
+      - user: Where can I read the latest developments in City DAO?
+        text: You can read about the latest developments in citydao in the discord, on the citydao website (citydao.io), on https://city.mirror.xyz/, or at https://twitter.com/CityDAO
+
