@@ -44,6 +44,24 @@ def is_last_message_stale(
         and last_message.author
         and last_message.author.id != bot_id
     )
+    
+def is_last_message_stop_message(
+    interaction_message: DiscordMessage, last_message: DiscordMessage, bot_id: str
+) -> bool:
+    return (
+        last_message
+        and last_message.author
+        and last_message.author.id != bot_id
+        and any(stop_word in last_message.content.lower() for stop_word in ['✅', '❌'])
+    )
+    
+def is_summarize_active(
+     messages: List[Message]
+) -> bool:
+    STOP_WORD = '✍️'
+    return (
+        any(STOP_WORD in message.text for message in messages)
+    )
 
 
 async def close_thread(thread: discord.Thread):

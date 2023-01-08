@@ -16,10 +16,12 @@ from src.utils import (
     should_block,
     close_thread,
     is_last_message_stale,
+    is_last_message_stop_message,
+    is_summarize_active,
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, process_response
+from src.completion import generate_completion_response, generate_summarisation_response, process_response
 from src.moderation import (
     moderate_message,
     send_moderation_blocked_message,
@@ -51,6 +53,29 @@ async def on_ready():
                 messages.append(m)
         completion.MY_BOT_EXAMPLE_CONVOS.append(Conversation(messages=messages))
     await tree.sync()
+
+## Create a report page
+#/report message:
+@tree.command(name="report", description="Create a report page image and url link")
+async def report_command(int: discord.Interaction, user: discord.Member):
+    try:
+        # Make an embed for the report page
+        embed = discord.Embed(
+            description=f"""
+            <@{user.id}> wants a reportcard! 🤖💬
+            
+            **Report Card** 📝
+            """,
+            color=discord.Color.dark_teal(),
+        )
+        
+        embed.add_field(name=f"{user.name}'s Report Card" ,value="[Click here to view your report]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
+        
+        await int.response.send_message(embed=embed)
+            
+    except Exception as e:
+        logger.error(f"Report command error: {e}")
+        return
 
 
 # /chat message:
@@ -89,10 +114,20 @@ async def chat_command(int: discord.Interaction, message: str):
                 )
                 return
 
+            # Add thread dialog description
             embed = discord.Embed(
-                description=f"<@{user.id}> wants to chat! 🤖💬",
+                description=f"""
+                <@{user.id}> wants to chat! 🤖💬
+                
+                :writing_hand:  ---> Summarize the conversation
+                
+                :white_check_mark: --->  End chat and submit prompt
+                
+                :x: --->  End chat and delete prompt
+                """,
                 color=discord.Color.green(),
             )
+            
             embed.add_field(name=user.name, value=message)
 
             if len(flagged_str) > 0:
@@ -144,7 +179,7 @@ async def chat_command(int: discord.Interaction, message: str):
 # calls for each message
 @client.event
 async def on_message(message: DiscordMessage):
-    try:
+    try:         
         # block servers not in allow list
         if should_block(guild=message.guild):
             return
@@ -242,11 +277,64 @@ async def on_message(message: DiscordMessage):
         channel_messages = [x for x in channel_messages if x is not None]
         channel_messages.reverse()
 
-        # generate the response
-        async with thread.typing():
-            response_data = await generate_completion_response(
-                messages=channel_messages, user=message.author
-            )
+        # if the last message is an stop/signal message, then summarise the conversation
+        if is_last_message_stop_message(
+            interaction_message=message,
+            last_message=thread.last_message,
+            bot_id=client.user.id,
+        ):
+            COMPLETED_MESSAGE = '✅'
+            STOP_MESSAGE = '❌'
+                    
+            if thread.last_message.content.lower() == COMPLETED_MESSAGE :
+                # generate closing message and summarise
+                 await thread.send(
+                    embed=discord.Embed(
+                        description=f"**{message.author}'s message has been Submitted!**",
+                        color=discord.Color.green(),
+                    )
+                )
+                
+                 return
+                    
+            
+            elif thread.last_message.content.lower() == STOP_MESSAGE:
+                # generate closing message and Exit
+                 await thread.send(
+                    embed=discord.Embed(
+                        description=f"❌ **{message.author}'s Conversation has been deleted.**",
+                        color=discord.Color.red(),
+                    )
+                )
+                 
+                 return
+                 
+            else:
+                # User needs to send a valid closing message
+                await thread.send(
+                    embed=discord.Embed(
+                        description=f"**Invalid response** - Please send ✅ or ❌",
+                        color=discord.Color.yellow(),
+                    )
+                )
+                return
+              
+        elif is_summarize_active(
+                messages=channel_messages,
+            ): 
+            # generate summarized response mode     
+            async with thread.typing():
+                response_data = await generate_summarisation_response(
+                    messages=channel_messages, user=message.author
+                )
+
+        
+        else:
+            # generate standard response mode
+            async with thread.typing():
+                response_data = await generate_completion_response(
+                    messages=channel_messages, user=message.author
+                )
 
         if is_last_message_stale(
             interaction_message=message,
