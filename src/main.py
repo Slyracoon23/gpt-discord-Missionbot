@@ -21,7 +21,7 @@ from src.utils import (
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, generate_summarisation_response, process_response
+from src.completion import generate_completion_response, generate_summarisation_response, generate_starter_response, process_response
 from src.moderation import (
     moderate_message,
     send_moderation_blocked_message,
@@ -76,6 +76,109 @@ async def report_command(int: discord.Interaction, user: discord.Member):
     except Exception as e:
         logger.error(f"Report command error: {e}")
         return
+
+
+# /survey message:
+@tree.command(name="survey", description="Create a new thread for survey")
+@discord.app_commands.checks.has_permissions(send_messages=True)
+@discord.app_commands.checks.has_permissions(view_channel=True)
+@discord.app_commands.checks.bot_has_permissions(send_messages=True)
+@discord.app_commands.checks.bot_has_permissions(view_channel=True)
+@discord.app_commands.checks.bot_has_permissions(manage_threads=True)
+async def chat_command(int: discord.Interaction, message: str, user: discord.Member):
+    try:
+        # only support creating thread in text channel
+        if not isinstance(int.channel, discord.TextChannel):
+            return
+
+        # block servers not in allow list
+        if should_block(guild=int.guild):
+            return
+
+        surveyor = int.user
+        logger.info(f"Survey command by {surveyor} {message[:20]} to {user}")
+        try:
+            # moderate the message
+            flagged_str, blocked_str = moderate_message(message=message, user=surveyor)
+            await send_moderation_blocked_message(
+                guild=int.guild,
+                user=surveyor,
+                blocked_str=blocked_str,
+                message=message,
+            )
+            if len(blocked_str) > 0:
+                # message was blocked
+                await int.response.send_message(
+                    f"Your prompt has been blocked by moderation.\n{message}",
+                    ephemeral=True,
+                )
+                return
+            
+            
+            # Add thread dialog description
+            embed = discord.Embed(
+                description=f"""
+                <@{surveyor.id}> wants to survey <@{user.id}>! 🤖💬
+                
+                :writing_hand:  ---> Summarize the conversation
+                
+                :white_check_mark: --->  End chat and submit prompt
+                
+                :x: --->  End chat and delete prompt
+                """,
+                color=discord.Color.green(),
+            )
+                
+            
+            embed.add_field(name=user.name, value=message)
+
+            if len(flagged_str) > 0:
+                # message was flagged
+                embed.color = discord.Color.yellow()
+                embed.title = "⚠️ This prompt was flagged by moderation."
+
+            await int.response.send_message(embed=embed)
+            response = await int.original_response()
+
+            await send_moderation_flagged_message(
+                guild=int.guild,
+                user=user,
+                flagged_str=flagged_str,
+                message=message,
+                url=response.jump_url,
+            )
+            
+        except Exception as e:
+            logger.exception(e)
+            await int.response.send_message(
+                f"Failed to start chat {str(e)}", ephemeral=True
+            )
+            return
+        
+          # create the thread
+        thread = await response.create_thread(
+            name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {message[:30]}",
+            slowmode_delay=1,
+            reason="gpt-bot",
+            auto_archive_duration=60,
+        )
+            
+        async with thread.typing():
+            # fetch completion
+            messages = [Message(user=user.name, text=message)]
+            response_data = await generate_starter_response(
+                messages=messages, user=user
+            )
+            # send the result
+            await process_response(
+                user=user, thread=thread, response_data=response_data
+            )
+            
+    except Exception as e:
+        logger.exception(e)
+        await int.response.send_message(
+            f"Failed to start chat {str(e)}", ephemeral=True
+        )
 
 
 # /chat message:
@@ -331,10 +434,14 @@ async def on_message(message: DiscordMessage):
         
         else:
             # generate standard response mode
-            async with thread.typing():
-                response_data = await generate_completion_response(
+             async with thread.typing():
+                response_data = await generate_starter_response(
                     messages=channel_messages, user=message.author
                 )
+            # async with thread.typing():
+            #     response_data = await generate_completion_response(
+            #         messages=channel_messages, user=message.author
+            #     )
 
         if is_last_message_stale(
             interaction_message=message,

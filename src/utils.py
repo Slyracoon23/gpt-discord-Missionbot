@@ -58,10 +58,13 @@ def is_last_message_stop_message(
 def is_summarize_active(
      messages: List[Message]
 ) -> bool:
-    STOP_WORD = '✍️'
-    return (
-        any(STOP_WORD in message.text for message in messages)
-    )
+    
+    return len(messages) > 7
+
+    # STOP_WORD = '✍️'
+    # return (
+    #     any(STOP_WORD in message.text for message in messages)
+    # )
 
 
 async def close_thread(thread: discord.Thread):
