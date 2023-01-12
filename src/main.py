@@ -18,10 +18,11 @@ from src.utils import (
     is_last_message_stale,
     is_last_message_stop_message,
     is_summarize_active,
+    is_evaluator_active,
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, generate_summarisation_response, generate_starter_response, process_response
+from src.completion import generate_completion_response, generate_summarisation_response, generate_starter_response, generate_evaluator_response, process_response
 from src.moderation import (
     moderate_message,
     send_moderation_blocked_message,
@@ -421,6 +422,15 @@ async def on_message(message: DiscordMessage):
                     )
                 )
                 return
+        elif  is_evaluator_active(
+                messages=channel_messages,
+            ): 
+            
+            # generate summarized response mode     
+            async with thread.typing():
+                response_data = await generate_evaluator_response(
+                    messages=channel_messages, user=message.author
+                )
               
         elif is_summarize_active(
                 messages=channel_messages,

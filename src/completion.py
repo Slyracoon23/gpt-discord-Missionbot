@@ -7,10 +7,12 @@ from src.constants import (
     BOT_INSTRUCTIONS,
     BOT_SUMMARISATION_INSTRUCTIONS,
     BOT_STARTER_INSTRUCTIONS,
+    BOT_EVALUATOR_INSTRUCTIONS,
     BOT_NAME,
     EXAMPLE_CONVOS,
     EXAPMPLE_SUMMARISATION_CONVOS,
     EXAMPLE_STARTER_CONVOS,
+    EXAMPLE_EVALUATOR_CONVOS,
 )
 import discord
 from src.base import Message, Prompt, Conversation
@@ -101,7 +103,66 @@ async def generate_summarisation_response(
         return CompletionData(
             status=CompletionResult.OTHER_ERROR, reply_text=None, status_text=str(e)
         )
-        
+ 
+async def generate_evaluator_response(
+    messages: List[Message], user: str
+)-> CompletionData:
+    try:
+        prompt = Prompt(
+            header=Message(
+                "System", f"Instructions for {MY_BOT_NAME}: {BOT_EVALUATOR_INSTRUCTIONS}"
+            ),
+            examples=EXAMPLE_EVALUATOR_CONVOS,
+            convo=Conversation(messages + [Message(MY_BOT_NAME)]),
+        )
+        rendered = prompt.render()
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=rendered,
+            temperature=1.0,
+            top_p=0.9,
+            max_tokens=512,
+            stop=["<|endoftext|>"],
+        )
+        reply = response.choices[0].text.strip()
+        if reply:
+            flagged_str, blocked_str = moderate_message(
+                message=(rendered + reply)[-500:], user=user
+            )
+            if len(blocked_str) > 0:
+                return CompletionData(
+                    status=CompletionResult.MODERATION_BLOCKED,
+                    reply_text=reply,
+                    status_text=f"from_response:{blocked_str}",
+                )
+
+            if len(flagged_str) > 0:
+                return CompletionData(
+                    status=CompletionResult.MODERATION_FLAGGED,
+                    reply_text=reply,
+                    status_text=f"from_response:{flagged_str}",
+                )
+        return CompletionData(
+            status=CompletionResult.OK, reply_text=reply, status_text=None
+        )
+    except openai.error.InvalidRequestError as e:
+        if "This model's maximum context length" in e.user_message:
+            return CompletionData(
+                status=CompletionResult.TOO_LONG, reply_text=None, status_text=str(e)
+            )
+        else:
+            logger.exception(e)
+            return CompletionData(
+                status=CompletionResult.INVALID_REQUEST,
+                reply_text=None,
+                status_text=str(e),
+            )
+    except Exception as e:
+        logger.exception(e)
+        return CompletionData(
+            status=CompletionResult.OTHER_ERROR, reply_text=None, status_text=str(e)
+        )
+       
         
 async def generate_starter_response(
     messages: List[Message], user: str

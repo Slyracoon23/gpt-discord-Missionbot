@@ -54,6 +54,11 @@ def is_last_message_stop_message(
         and last_message.author.id != bot_id
         and any(stop_word in last_message.content.lower() for stop_word in ['✅', '❌'])
     )
+
+def is_evaluator_active(
+    messages: List[Message]
+) -> bool:
+    return len(messages) > 8
     
 def is_summarize_active(
      messages: List[Message]

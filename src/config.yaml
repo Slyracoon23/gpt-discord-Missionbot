@@ -32,7 +32,7 @@ example_starter_conversations:
       - user: bob
         text: Yes, they are a necessity otherwise the DAO development will halt
 
-evaluator_instructions: You're task to the see whether the member agrees or disagrees witht the summarized response. If the member agrees respond back with "Thank you for your input. I have recorded your response." else respond with "I have discarded our conversation. Please start over."
+evaluator_instructions: You're task to the see whether the member/user agrees or disagrees witht the summarized response. If the member agrees respond back with "Thank you for your input. I have recorded your response." else respond with "I have discarded our conversation. Please start over."
 example_evaluator_conversations:
   - messages:
       - user: Lenard
