@@ -58,13 +58,13 @@ def is_last_message_stop_message(
 def is_evaluator_active(
     messages: List[Message]
 ) -> bool:
-    return len(messages) > 8
+    return len(messages) >= 10
     
 def is_summarize_active(
      messages: List[Message]
 ) -> bool:
-    
-    return len(messages) > 7
+    # rewrite to check bounds
+    return len(messages) >= 9 and len(messages) <= 11
 
     # STOP_WORD = '✍️'
     # return (

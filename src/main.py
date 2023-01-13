@@ -422,6 +422,16 @@ async def on_message(message: DiscordMessage):
                     )
                 )
                 return
+              
+        elif is_summarize_active(
+                messages=channel_messages,
+            ):
+            # generate summarized response mode     
+            async with thread.typing():
+                response_data = await generate_summarisation_response(
+                    messages=channel_messages, user=message.author
+                )
+
         elif  is_evaluator_active(
                 messages=channel_messages,
             ): 
@@ -431,16 +441,6 @@ async def on_message(message: DiscordMessage):
                 response_data = await generate_evaluator_response(
                     messages=channel_messages, user=message.author
                 )
-              
-        elif is_summarize_active(
-                messages=channel_messages,
-            ): 
-            # generate summarized response mode     
-            async with thread.typing():
-                response_data = await generate_summarisation_response(
-                    messages=channel_messages, user=message.author
-                )
-
         
         else:
             # generate standard response mode
