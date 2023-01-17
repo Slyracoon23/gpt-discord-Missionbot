@@ -35,8 +35,12 @@ class Config:
     name: str
     instructions: str
     summarisation_instructions: str
+    starter_instructions: str
+    evaluator_instructions: str
     example_summarisation_conversation: List[Conversation]
     example_conversations: List[Conversation]
+    example_starter_conversations: List[Conversation]
+    example_evaluator_conversations: List[Conversation]
 
 
 @dataclass(frozen=True)

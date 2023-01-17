@@ -54,14 +54,22 @@ def is_last_message_stop_message(
         and last_message.author.id != bot_id
         and any(stop_word in last_message.content.lower() for stop_word in ['✅', '❌'])
     )
+
+def is_evaluator_active(
+    messages: List[Message]
+) -> bool:
+    return len(messages) >= 10
     
 def is_summarize_active(
      messages: List[Message]
 ) -> bool:
-    STOP_WORD = '✍️'
-    return (
-        any(STOP_WORD in message.text for message in messages)
-    )
+    # rewrite to check bounds
+    return len(messages) >= 9 and len(messages) <= 11
+
+    # STOP_WORD = '✍️'
+    # return (
+    #     any(STOP_WORD in message.text for message in messages)
+    # )
 
 
 async def close_thread(thread: discord.Thread):

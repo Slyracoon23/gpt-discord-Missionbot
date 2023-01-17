@@ -17,8 +17,13 @@ CONFIG: Config = dacite.from_dict(
 BOT_NAME = CONFIG.name
 BOT_INSTRUCTIONS = CONFIG.instructions
 BOT_SUMMARISATION_INSTRUCTIONS = CONFIG.summarisation_instructions
+BOT_STARTER_INSTRUCTIONS = CONFIG.starter_instructions
+BOT_EVALUATOR_INSTRUCTIONS = CONFIG.evaluator_instructions
 EXAMPLE_CONVOS = CONFIG.example_conversations
 EXAPMPLE_SUMMARISATION_CONVOS = CONFIG.example_summarisation_conversation
+EXAMPLE_STARTER_CONVOS = CONFIG.example_starter_conversations
+EXAMPLE_EVALUATOR_CONVOS = CONFIG.example_evaluator_conversations
+
 
 DISCORD_BOT_TOKEN = os.environ["DISCORD_BOT_TOKEN"]
 DISCORD_CLIENT_ID = os.environ["DISCORD_CLIENT_ID"]
