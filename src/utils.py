@@ -45,6 +45,17 @@ def is_last_message_stale(
         and last_message.author.id != bot_id
     )
     
+def is_last_message_termination_message(
+    interaction_message: DiscordMessage, last_message: DiscordMessage, bot_id: str
+) -> bool:
+    return (
+        last_message
+        and last_message.author
+        and last_message.author.id != bot_id
+        and  (last_message.content in ['Thank you for your input. I have recorded your response.', 'I have discarded our conversation. Please start over.'])
+    )
+
+    
 def is_last_message_stop_message(
     interaction_message: DiscordMessage, last_message: DiscordMessage, bot_id: str
 ) -> bool:

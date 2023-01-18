@@ -9,6 +9,8 @@ from src.constants import (
     ACTIVATE_THREAD_PREFX,
     MAX_THREAD_MESSAGES,
     SECONDS_DELAY_RECEIVING_MSG,
+    AWS_SERVER_PUBLIC_KEY,
+    AWS_SERVER_SECRET_KEY,
 )
 import asyncio
 from src.utils import (
@@ -22,12 +24,39 @@ from src.utils import (
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, generate_summarisation_response, generate_starter_response, generate_evaluator_response, process_response
+from src.completion import generate_completion_response, generate_summarisation_response, generate_starter_response, generate_evaluator_response, process_response, is_last_response_termination_message
 from src.moderation import (
     moderate_message,
     send_moderation_blocked_message,
     send_moderation_flagged_message,
 )
+
+
+import boto3, json, decimal
+
+from botocore.exceptions import ClientError
+
+session = boto3.Session(
+    aws_access_key_id=AWS_SERVER_PUBLIC_KEY,
+    aws_secret_access_key=AWS_SERVER_SECRET_KEY,
+)
+
+dynamodb = session.resource('dynamodb', region_name='eu-central-1')
+
+table = dynamodb.Table('Discord-Attestations')
+
+# Helper class to convert a DynamoDB item to JSON.
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if abs(o) % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+
+
+
 
 logging.basicConfig(
     format="[%(asctime)s] [%(filename)s:%(lineno)d] %(message)s", level=logging.INFO
@@ -460,7 +489,27 @@ async def on_message(message: DiscordMessage):
         ):
             # there is another message and its not from us, so ignore this response
             return
-
+        
+        if is_last_response_termination_message(
+            response_data=response_data,
+        ):
+                
+            #  record the dislog in the database
+            response = table.put_item(
+            Item={
+                    'id' :  message.author.id,
+                    'DiscordID': message.author.id,
+                    'ServerID': message.guild.id,
+                    'RoleID': ','.join(map(lambda x: x.name, message.author.roles)),
+                    'Attestation': next((i for i in map(lambda x: x.text, channel_messages[::-1]) if "To summarize" in i), None), # last item of list with substring -- ITS VERY UGLY
+                    'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::-1])),
+                }
+            )
+        
+            print("PutItem succeeded:")
+            print(json.dumps(response, indent=4, cls=DecimalEncoder))
+                           
+            
         # send response
         await process_response(
             user=message.author, thread=thread, response_data=response_data
