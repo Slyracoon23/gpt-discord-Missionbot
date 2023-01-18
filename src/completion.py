@@ -42,6 +42,14 @@ class CompletionData:
     reply_text: Optional[str]
     status_text: Optional[str]
 
+def is_last_response_termination_message(
+    response_data: CompletionData
+) -> bool:
+    return (
+        response_data
+        and  (response_data.reply_text in ['Thank you for your input. I have recorded your response.', 'I have discarded our conversation. Please start over.'])
+    )
+
 
 async def generate_summarisation_response(
     messages: List[Message], user: str
