@@ -220,16 +220,73 @@ async def generate_starter_response(
             )
         else:
             logger.exception(e)
-            return CompletionData(
-                status=CompletionResult.INVALID_REQUEST,
-                reply_text=None,
-                status_text=str(e),
-            )
+            return ""
     except Exception as e:
         logger.exception(e)
-        return CompletionData(
-            status=CompletionResult.OTHER_ERROR, reply_text=None, status_text=str(e)
+        return ""
+        
+async def generate_survey_summary(
+    survey_post: str
+) -> str:
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=f"""
+                You're a helpful Sumorizor bot. The master wants to the members of the DAO to understand  the following proposal. Your task is to analyse the following text and output a summary that best captures the topic and major points of the proposal. Start off the summary with `TLDR: `.
+            
+                {survey_post}
+                    """,
+            temperature=1.0,
+            top_p=0.9,
+            max_tokens=512,
+            stop=["<|endoftext|>"],
         )
+        reply = response.choices[0].text.strip()
+        return reply
+    except openai.error.InvalidRequestError as e:
+        if "This model's maximum context length" in e.user_message:
+            return ""
+        else:
+            logger.exception(e)
+            return ""
+    except Exception as e:
+        logger.exception(e)
+        return ""
+
+
+async def generate_survey_question(
+    survey_post: str, summary: str
+) -> str:
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=f"""
+            You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a question that asks the DAO member his opinion about the proposal. Start off each question `Survey: `            
+            ```
+            {survey_post}
+            
+            {summary}
+            ```
+            """,
+            temperature=1.0,
+            top_p=0.9,
+            max_tokens=512,
+            stop=["<|endoftext|>"],
+        )
+        reply = response.choices[0].text.strip()
+        return reply
+    except openai.error.InvalidRequestError as e:
+        if "This model's maximum context length" in e.user_message:
+            return CompletionData(
+                status=CompletionResult.TOO_LONG, reply_text=None, status_text=str(e)
+            )
+        else:
+            logger.exception(e)
+            return ""
+    except Exception as e:
+        logger.exception(e)
+        return ""
+
 
 
 

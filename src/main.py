@@ -1,5 +1,6 @@
 import discord
 from discord import Message as DiscordMessage
+from discord import ChannelType
 import logging
 from src.base import Message, Conversation
 from src.constants import (
@@ -24,12 +25,25 @@ from src.utils import (
     discord_message_to_message,
 )
 from src import completion
-from src.completion import generate_completion_response, generate_summarisation_response, generate_starter_response, generate_evaluator_response, process_response, is_last_response_termination_message
+from src.completion import (
+    generate_completion_response, 
+    generate_summarisation_response, 
+    generate_starter_response, 
+    generate_evaluator_response, 
+    process_response, 
+    is_last_response_termination_message,
+    generate_survey_question,
+    generate_survey_summary,
+)
 from src.moderation import (
     moderate_message,
     send_moderation_blocked_message,
     send_moderation_flagged_message,
 )
+import requests
+import re
+
+import json
 
 
 import boto3, json, decimal
@@ -108,8 +122,8 @@ async def report_command(int: discord.Interaction, user: discord.Member):
         return
 
 
-# /survey message:
-@tree.command(name="survey", description="Create a new thread for survey")
+# /query message:
+@tree.command(name="query", description="Create a new thread for Query")
 @discord.app_commands.checks.has_permissions(send_messages=True)
 @discord.app_commands.checks.has_permissions(view_channel=True)
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
@@ -125,14 +139,14 @@ async def chat_command(int: discord.Interaction, message: str, user: discord.Mem
         if should_block(guild=int.guild):
             return
 
-        surveyor = int.user
-        logger.info(f"Survey command by {surveyor} {message[:20]} to {user}")
+        queryor = int.user
+        logger.info(f"Query command by {queryor} {message[:20]} to {user}")
         try:
             # moderate the message
-            flagged_str, blocked_str = moderate_message(message=message, user=surveyor)
+            flagged_str, blocked_str = moderate_message(message=message, user=queryor)
             await send_moderation_blocked_message(
                 guild=int.guild,
-                user=surveyor,
+                user=queryor,
                 blocked_str=blocked_str,
                 message=message,
             )
@@ -148,7 +162,7 @@ async def chat_command(int: discord.Interaction, message: str, user: discord.Mem
             # Add thread dialog description
             embed = discord.Embed(
                 description=f"""
-                <@{surveyor.id}> wants to survey <@{user.id}>! 🤖💬
+                <@{queryor.id}> wants to query <@{user.id}>! 🤖💬
                 
                 :writing_hand:  ---> Summarize the conversation
                 
@@ -312,7 +326,8 @@ async def chat_command(int: discord.Interaction, message: str):
 # calls for each message
 @client.event
 async def on_message(message: DiscordMessage):
-    try:         
+    try:    
+        # TODO: allow DMs to be used for chat      
         # block servers not in allow list
         if should_block(guild=message.guild):
             return
@@ -324,6 +339,7 @@ async def on_message(message: DiscordMessage):
         # ignore messages not in a thread
         channel = message.channel
         if not isinstance(channel, discord.Thread):
+            logger.info("Not a thread")
             return
 
         # ignore threads not created by the bot
@@ -517,5 +533,136 @@ async def on_message(message: DiscordMessage):
     except Exception as e:
         logger.exception(e)
 
+
+
+
+
+# /query message:
+@tree.command(name="survey", description="Create a query message to start a conversation in DMs") 
+@discord.app_commands.checks.has_permissions(send_messages=True)
+@discord.app_commands.checks.bot_has_permissions(send_messages=True)
+async def query_command(int: discord.Interaction, url: str, user: discord.User):
+    # DM specific user
+    try:
+        
+        # only support creating thread in text channel
+        if not isinstance(int.channel, discord.TextChannel):
+            return
+
+        # block servers not in allow list
+        if should_block(guild=int.guild):
+            return
+
+        ######################### Discourse URL ############################
+        # Get URL and parse it
+        # Disource URL is a topic URL https://docs.discourse.org/#tag/Topics/operation/getTopic
+        
+        # validate domain name
+        domain_name = "https://forum.citydao.io/t/"
+        if not url.startswith(domain_name):
+            logger.info("Invalid URL")
+            return
+        
+        # extract ID from URL using regular expressions
+        match = re.search(r'\/\d+', url)
+        
+        if match:
+            id = match.group()[1:] # remove the first slash
+        else:
+            logger.info("No ID found in URL")
+            return
+        
+        
+        # Get the topic from Discourse
+        api_url = f'{domain_name}{id}.json'
+        
+        headers = {
+            'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
+            'Api-Username': 'system'
+            }
+
+        response = requests.request("GET", api_url, headers=headers)
+
+
+        if response.status_code != 200:
+            logger.info("Error getting topic from Discourse")
+            return
+        
+        
+        json_obj = json.loads(response.text)
+
+        
+        post_proposal = json_obj['post_stream']['posts'][0]['cooked']
+
+        # Summarize the topic
+        survey_summary = await generate_survey_summary(
+                    survey_post=post_proposal
+        )
+        
+        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+        # Get the topic question from LLM
+        survey_question = await generate_survey_question(
+                    survey_post=post_proposal, summary=survey_summary
+                )
+        
+        
+        
+        
+        
+        
+        return
+        
+        
+        
+        
+        
+        
+        
+        
+        ###################### MAKE PRIVATE THREAD ####### 
+        
+        
+        # Make an embed for the report page
+        embed = discord.Embed(
+            description=f"""
+            Survey {url} has been Sent! 🤖💬
+            
+            """,
+            color=discord.Color.dark_teal(),
+        )
+        
+        embed.add_field(name=f"Live Feed" ,value="[Click here to view attestations]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
+        
+        await int.response.send_message(embed=embed)
+        
+        CHANNEL_ID = 1052665674549428254
+        
+        text_channel = client.get_channel(CHANNEL_ID)
+
+
+          # create private thread
+        thread = await text_channel.create_thread(
+            name=f"{ACTIVATE_THREAD_PREFX}",
+            slowmode_delay=1,
+            reason="gpt-bot",
+            auto_archive_duration=60,
+            type=ChannelType.private_thread # ERROR MESSAGE, NO ATTRIBUTE TYPE
+        )
+        
+        
+        # Add the user to the thread
+        # await thread.add_user(user)
+        
+        await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
+            
+        # Send DM invite link
+        # await user.send(inviteLink)
+            
+    except Exception as e:
+        logger.error(f"Report command error: {e}")
+        return
+
+    
+    
 
 client.run(DISCORD_BOT_TOKEN)
