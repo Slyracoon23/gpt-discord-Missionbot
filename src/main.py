@@ -129,7 +129,7 @@ async def report_command(int: discord.Interaction, user: discord.Member):
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(view_channel=True)
 @discord.app_commands.checks.bot_has_permissions(manage_threads=True)
-async def chat_command(int: discord.Interaction, message: str, user: discord.Member):
+async def query_command(int: discord.Interaction, message: str, user: discord.Member):
     try:
         # only support creating thread in text channel
         if not isinstance(int.channel, discord.TextChannel):
@@ -541,7 +541,7 @@ async def on_message(message: DiscordMessage):
 @tree.command(name="survey", description="Create a query message to start a conversation in DMs") 
 @discord.app_commands.checks.has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
-async def query_command(int: discord.Interaction, url: str, user: discord.User):
+async def survey_command(int: discord.Interaction, url: str, user: discord.User):
     # DM specific user
     try:
         
@@ -592,8 +592,22 @@ async def query_command(int: discord.Interaction, url: str, user: discord.User):
         json_obj = json.loads(response.text)
 
         
+        topic_slug = json_obj['post_stream']['posts'][0]['topic_slug']
+        
         post_proposal = json_obj['post_stream']['posts'][0]['cooked']
+       
+        
+        embed = discord.Embed(
+            description=f"""
+            Missio is on the job 🤖💬
+            """,
+            color=discord.Color.dark_teal(),
+        )
 
+        # reply to the interaction
+        await int.response.send_message(embed=embed)
+
+        
         # Summarize the topic
         survey_summary = await generate_survey_summary(
                     survey_post=post_proposal
@@ -604,59 +618,57 @@ async def query_command(int: discord.Interaction, url: str, user: discord.User):
         survey_question = await generate_survey_question(
                     survey_post=post_proposal, summary=survey_summary
                 )
+    
+         
+        CHANNEL_ID = 1052665674549428254
         
+        text_channel = client.get_channel(CHANNEL_ID)
         
+        # create private thread
+        thread = await text_channel.create_thread(
+            name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {survey_question[:30]}",
+            slowmode_delay=1,
+            reason="gpt-bot",
+            auto_archive_duration=60,
+            type=ChannelType.private_thread
+        )
         
-        
-        
-        
-        return
-        
-        
-        
-        
-        
-        
-        
-        
-        ###################### MAKE PRIVATE THREAD ####### 
-        
-        
-        # Make an embed for the report page
+          # Edit sent embed
         embed = discord.Embed(
             description=f"""
-            Survey {url} has been Sent! 🤖💬
+            Hey <@{user.id}>! Missio wants to ask you something 🤖💬
             
+            {topic_slug}
+            
+            {survey_summary}
+            
+            {survey_question}
             """,
             color=discord.Color.dark_teal(),
         )
         
-        embed.add_field(name=f"Live Feed" ,value="[Click here to view attestations]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
+        embed.add_field(name=f"Proposal Link" ,value=f"[Click here to view Original Proposal]({url})", inline=False)
+            
+        # edit the embed of the message
+        await thread.send(embed=embed)        
+           
         
-        await int.response.send_message(embed=embed)
-        
-        CHANNEL_ID = 1052665674549428254
-        
-        text_channel = client.get_channel(CHANNEL_ID)
-
-
-          # create private thread
-        thread = await text_channel.create_thread(
-            name=f"{ACTIVATE_THREAD_PREFX}",
-            slowmode_delay=1,
-            reason="gpt-bot",
-            auto_archive_duration=60,
-            type=ChannelType.private_thread # ERROR MESSAGE, NO ATTRIBUTE TYPE
-        )
-        
-        
-        # Add the user to the thread
-        # await thread.add_user(user)
-        
+        # Add the user to the thread by @ mentioning them
         await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
             
         # Send DM invite link
         # await user.send(inviteLink)
+        
+        async with thread.typing():
+            # fetch completion
+            messages = [Message(user=user.name, text=survey_question)]
+            response_data = await generate_starter_response(
+                messages=messages, user=user
+            )
+            # send the result
+            await process_response(
+                user=user, thread=thread, response_data=response_data
+            )
             
     except Exception as e:
         logger.error(f"Report command error: {e}")

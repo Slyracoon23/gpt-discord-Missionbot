@@ -4,3 +4,7 @@ __pycache__/
 */.DS_Store
 .DS_Store
 .history
+.local
+.env*
+todo.txt
+.vscode/
