@@ -8,3 +8,4 @@ __pycache__/
 .env*
 todo.txt
 .vscode/
+wandb/

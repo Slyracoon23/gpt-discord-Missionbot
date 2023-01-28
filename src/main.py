@@ -550,7 +550,7 @@ async def on_message(message: DiscordMessage):
         ):
             
             # Find parent of thread to get the channel ID
-            projectName = thread.name.split()[0] # TODO
+            projectName = thread.name.split()[1].lower() # TODO
             
             
             
@@ -631,11 +631,22 @@ async def on_message(message: DiscordMessage):
 
 
                 wandb.finish()
+                
+                return run.get_url()
             
             
-            wandb_run(projectName)
+            wandb_url = wandb_run(projectName)
             
-                           
+            embed = discord.Embed(
+            description=f"""
+            Your report run is complete! You can view the results at {wandb_url}
+            """,
+            color=discord.Color.dark_teal(),
+            )
+            # edit the embed of the message
+            await thread.send(embed=embed)     
+            
+            
             
         # send response
         await process_response(
@@ -679,7 +690,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         # Get URL and parse it
         
         # Switch statement to check if URL is valid
-        project_name = "Missio"
+        project_name = "missio"
         # Summarize the survey hard coded
         survey_summary = "TLDR: MissionBot is an intelegent LLM for aligning discourse/mission that allows DAOs to bring alignment of missions, values and opinions in an organisation or DAO. "
        
@@ -694,13 +705,13 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
        ##########################################################33
         
         
-        CHANNEL_ID = 1068223914251137064 # Missio channel ID
+        CHANNEL_ID = 1052665674549428254 # Missio channel ID
         
         text_channel = client.get_channel(CHANNEL_ID)
         
         # create private thread
         thread = await text_channel.create_thread(
-            name=f"{project_name} {user.name[:20]} - {survey_question[:30]}",
+            name=f"{ACTIVATE_THREAD_PREFX} {project_name} {user.name[:20]} - {survey_question[:30]}",
             slowmode_delay=1,
             reason="gpt-bot",
             auto_archive_duration=60,
