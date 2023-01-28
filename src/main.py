@@ -44,6 +44,8 @@ import requests
 import re
 
 import json
+import jsonlines
+
 
 
 import wandb
@@ -65,6 +67,16 @@ session = boto3.Session(
 
 dynamodb = session.resource('dynamodb', region_name='eu-central-1')
 
+
+project_name_discord_option_list = []
+
+with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
+    for project in reader:
+        project_name_discord_option_list.append(discord.SelectOption(label=project["project-name"]))
+            
+
+                
+        
 
 # Helper class to convert a DynamoDB item to JSON.
 class DecimalEncoder(json.JSONEncoder):
@@ -92,7 +104,7 @@ tree = discord.app_commands.CommandTree(client)
 
 class SimpleView(discord.ui.View):
     
-    @discord.ui.select(options=[discord.SelectOption(label="Missio"),discord.SelectOption(label="Missio2")], placeholder="Select an option...")
+    @discord.ui.select(options=project_name_discord_option_list, placeholder="Select an option...")
     async def userSelect(self, interaction: discord.Interaction, select: discord.ui.Select):
         # DM specific user
         try:
@@ -105,6 +117,35 @@ class SimpleView(discord.ui.View):
             if should_block(guild=interaction.guild):
                 return
 
+            ######################### BuildSpace URL or name ############################
+            # Get URL and parse it
+                
+            with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
+                for project in reader:
+                    
+                    if project["project-name"].lower() == select.values[0].lower():
+                        
+            
+                        # Switch statement to check if URL is valid
+                        project_name = project["project-name"]
+                        # Summarize the survey hard coded
+                        survey_summary = project["project-summary"]
+                    
+                        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+                        # Get the topic qquestion hardcoded
+                        
+                        survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+                        
+                        project_url = project["project-url"]
+                        
+                        break
+
+                else:
+                    await interaction.response.send_message("Project not found")
+                    return
+                    
+        ##########################################################33
+                
             embed = discord.Embed(
                 description=f"""
                 Missio is on the job 🤖💬
@@ -116,26 +157,11 @@ class SimpleView(discord.ui.View):
             await interaction.response.send_message(embed=embed)
 
             
-            ######################### BuildSpace URL or name ############################
-            # Get URL and parse it
-            
-            # Switch statement to check if URL is valid
-            project_name = select.values[0]
-            # Summarize the survey hard coded
-            survey_summary = "TLDR: MissionBot is an intelegent LLM for aligning discourse/mission that allows DAOs to bring alignment of missions, values and opinions in an organisation or DAO. "
-        
-            # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-            # Get the topic qquestion hardcoded
-            
-            survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
-            
-            project_url = "https://buildspace.so/"
             
             
-        ##########################################################33
             
             
-            CHANNEL_ID = 1052665674549428254 # Missio channel ID
+            CHANNEL_ID = 1065386164594417727 # Missio channel ID
             
             text_channel = client.get_channel(CHANNEL_ID)
             
@@ -201,7 +227,7 @@ class SimpleView(discord.ui.View):
 # Possibly create an ephemeral message
 @client.event
 async def on_member_join(member):
-    channel = client.get_channel(1068588937959973057) # Welcome channel ID
+    channel = client.get_channel(1065386164594417727) # Welcome channel ID
     embed=discord.Embed(title=f"Welcome {member.name}", description=f"Thanks for joining {member.guild.name}!") # F-Strings!
     
     # embed.set_thumbnail(url=member.avatar_url) # Set the embed's thumbnail to the member's avatar image!
@@ -800,6 +826,30 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
         # block servers not in allow list
         if should_block(guild=int.guild):
             return
+        
+        with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
+            for project in reader:
+                
+                if project["project-name"].lower() == project_name.lower():
+                    
+        
+                    # Switch statement to check if URL is valid
+                    project_name = project["project-name"]
+                    # Summarize the survey hard coded
+                    survey_summary = project["project-summary"]
+                
+                    # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+                    # Get the topic qquestion hardcoded
+                    
+                    survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+                    
+                    project_url = project["project-url"]
+                    
+                    break
+
+            else:
+                await int.response.send_message("Project not found")
+                return
 
         embed = discord.Embed(
             description=f"""
@@ -812,26 +862,12 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
         await int.response.send_message(embed=embed)
 
         
-        ######################### BuildSpace URL or name ############################
-        # Get URL and parse it
-        
-        # Switch statement to check if URL is valid
-        project_name = project_name.lower()
-        # Summarize the survey hard coded
-        survey_summary = "TLDR: MissionBot is an intelegent LLM for aligning discourse/mission that allows DAOs to bring alignment of missions, values and opinions in an organisation or DAO. "
        
-        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-        # Get the topic qquestion hardcoded
-        
-        survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
-        
-        project_url = "https://buildspace.so/"
-        
          
        ##########################################################33
         
         
-        CHANNEL_ID = 1052665674549428254 # Missio channel ID
+        CHANNEL_ID = 1065386164594417727 # Missio channel ID
         
         text_channel = client.get_channel(CHANNEL_ID)
         
