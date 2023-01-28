@@ -57,7 +57,6 @@ session = boto3.Session(
 
 dynamodb = session.resource('dynamodb', region_name='eu-central-1')
 
-table = dynamodb.Table('Discord-Attestations')
 
 # Helper class to convert a DynamoDB item to JSON.
 class DecimalEncoder(json.JSONEncoder):
@@ -77,10 +76,42 @@ logging.basicConfig(
 )
 
 intents = discord.Intents.default()
+intents.members=True
 intents.message_content = True
 
 client = discord.Client(intents=intents)
 tree = discord.app_commands.CommandTree(client)
+
+class SimpleView(discord.ui.View):
+    
+    @discord.ui.button(label="Click me!")
+    async def hello(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("You clicked the button!", ephemeral=True)
+        await interaction.user.send("You clicked the button!")
+
+
+# Possibly create an ephemeral message
+@client.event
+async def on_member_join(member):
+    channel = client.get_channel(1068588937959973057) # Welcome channel ID
+    embed=discord.Embed(title=f"Welcome {member.name}", description=f"Thanks for joining {member.guild.name}!") # F-Strings!
+    
+    # embed.set_thumbnail(url=member.avatar_url) # Set the embed's thumbnail to the member's avatar image!
+
+    await channel.send(embed=embed)
+    
+    view = SimpleView()
+    # button = discord.ui.Button(label="Default Button", style=discord.ButtonStyle.primary)
+    # view.add_item(button)
+    await channel.send("Click the button!", view=view)
+
+    
+    
+# @client.event
+# async def on_button_click(interaction):
+#     # if interaction.component.label.startswith("Default Button"):
+#     await interaction.response.send_message("You clicked the button!", ephemeral=True)
+#     await interaction.user.send("You clicked the button!")
 
 
 @client.event
@@ -509,7 +540,13 @@ async def on_message(message: DiscordMessage):
         if is_last_response_termination_message(
             response_data=response_data,
         ):
-                
+            
+            # Find parent of thread to get the channel ID
+            parentName = thread.parent.name
+            parentID = thread.parent.id
+            
+            table = dynamodb.Table(parentName)
+
             #  record the dislog in the database
             response = table.put_item(
             Item={
@@ -518,12 +555,17 @@ async def on_message(message: DiscordMessage):
                     'ServerID': message.guild.id,
                     'RoleID': ','.join(map(lambda x: x.name, message.author.roles)),
                     'Attestation': next((i for i in map(lambda x: x.text, channel_messages[::-1]) if "To summarize" in i), None), # last item of list with substring -- ITS VERY UGLY
-                    'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::-1])),
+                    'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::])),
                 }
             )
         
             print("PutItem succeeded:")
             print(json.dumps(response, indent=4, cls=DecimalEncoder))
+            
+            ## Recieve all responses from the database
+            
+            
+            
                            
             
         # send response
@@ -553,50 +595,6 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         if should_block(guild=int.guild):
             return
 
-        ######################### Discourse URL ############################
-        # Get URL and parse it
-        # Disource URL is a topic URL https://docs.discourse.org/#tag/Topics/operation/getTopic
-        
-        # validate domain name
-        domain_name = "https://forum.citydao.io/t/"
-        if not url.startswith(domain_name):
-            logger.info("Invalid URL")
-            return
-        
-        # extract ID from URL using regular expressions
-        match = re.search(r'\/\d+', url)
-        
-        if match:
-            id = match.group()[1:] # remove the first slash
-        else:
-            logger.info("No ID found in URL")
-            return
-        
-        
-        # Get the topic from Discourse
-        api_url = f'{domain_name}{id}.json'
-        
-        headers = {
-            'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
-            'Api-Username': 'system'
-            }
-
-        response = requests.request("GET", api_url, headers=headers)
-
-
-        if response.status_code != 200:
-            logger.info("Error getting topic from Discourse")
-            return
-        
-        
-        json_obj = json.loads(response.text)
-
-        
-        topic_slug = json_obj['post_stream']['posts'][0]['topic_slug']
-        
-        post_proposal = json_obj['post_stream']['posts'][0]['cooked']
-       
-        
         embed = discord.Embed(
             description=f"""
             Missio is on the job 🤖💬
@@ -608,19 +606,26 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         await int.response.send_message(embed=embed)
 
         
-        # Summarize the topic
-        survey_summary = await generate_survey_summary(
-                    survey_post=post_proposal
-        )
+        ######################### BuildSpace URL or name ############################
+        # Get URL and parse it
         
+        # Switch statement to check if URL is valid
+        project_name = "Missio"
+        # Summarize the survey hard coded
+        survey_summary = "TLDR: MissionBot is an intelegent LLM for aligning discourse/mission that allows DAOs to bring alignment of missions, values and opinions in an organisation or DAO. "
+       
         # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-        # Get the topic question from LLM
-        survey_question = await generate_survey_question(
-                    survey_post=post_proposal, summary=survey_summary
-                )
-    
+        # Get the topic qquestion hardcoded
+        
+        survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+        
+        project_url = "https://buildspace.so/"
+        
          
-        CHANNEL_ID = 1052665674549428254
+       ##########################################################33
+        
+        
+        CHANNEL_ID = 1068223914251137064 # Missio channel ID
         
         text_channel = client.get_channel(CHANNEL_ID)
         
@@ -638,7 +643,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
             description=f"""
             Hey <@{user.id}>! Missio wants to ask you something 🤖💬
             
-            {topic_slug}
+            {project_name}
             
             {survey_summary}
             
@@ -647,7 +652,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
             color=discord.Color.dark_teal(),
         )
         
-        embed.add_field(name=f"Proposal Link" ,value=f"[Click here to view Original Proposal]({url})", inline=False)
+        embed.add_field(name=f"Project Link" ,value=f"[Click here to view the Project]({project_url})", inline=False)
             
         # edit the embed of the message
         await thread.send(embed=embed)        
@@ -661,7 +666,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         
         async with thread.typing():
             # fetch completion
-            messages = [Message(user=user.name, text=survey_question)]
+            messages = [Message(user=user.name, text=(project_name + '\n' + survey_summary + '\n' + survey_question))]
             response_data = await generate_starter_response(
                 messages=messages, user=user
             )

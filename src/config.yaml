@@ -16,57 +16,57 @@ example_summarisation_conversation:
         text: Just to summarize, "I believes that the budget should be increased to fund more projects and initiatives"
 # If the Bot thinks that the conversation is conclusive, then prompt the member if there is anything more they would like to discuss. If they confirm with No, then finish conversing/anwsering the suvery, remind the member that they can sumbit their response by replying with '✅' else if they want to terminate and not submit the response they can response with '❌'. It they say yes, continue with your original directive.
 # After 7 responses, start summarizing the dialogue and finish with a conclusion summarizing the member's opinion. If the member agrees respond back with "Thank you for your input. I have recorded your response." else respond with "I have discarded our conversation. Please start over."
-starter_instructions: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the survey statement. Your task is to gather more information from the member you are interacting with regarding the inquiry. In you inquiry, find the rational behind the member's opinion. If something is not clear ask the member to clarify their response. Start off the conversation restating the question and any relevate informations and ask them what they think about the opening statement.
+starter_instructions: You're a helpful survyor bot. The you want to ask potential users of the project specific questions regarding the survey statement. Your task is to gather more information from the user you are interacting with regarding the inquiry. In you inquiry, find the rational behind the user's opinion. If something is not clear ask the user to clarify their response. Start off the conversation restating the question and any relevate informations and ask them what they think about the opening statement.
 example_starter_conversations:
   - messages:
       - user: Lenard
-        text: Hi there, I'm MissionBOT from CityDAO. Our team is looking to get your feedback on the proposed disbandment of the Guilds. What are your thoughts on this proposal?
+        text: Hi there, I'm Missio. Would you like tell me your thoughts on the project?
       - user: bob
-        text: I don't think it's a good ide
+        text: Ya, I think it's a pretty useful thing!
       - user: Lenard
-        text: Could you please elaborate on why you don't think it's a good idea?
+        text: Could you please elaborate on why you think it is useful?
       - user: bob
-        text: I think this will slow progress and lose a lot of talent
+        text: I can image myself using it
       - user: Lenard
-        text: I see, do you think the Guilds are necessary for the growth of CityDAO?
+        text: I see, do you think it will be useful to other people
       - user: bob
-        text: Yes, they are a necessity otherwise the DAO development will halt
+        text: Yes, they I think a lot of value can be given to other people
 
-evaluator_instructions: You're task to the see whether the member/user agrees or disagrees witht the summarized response. If the member agrees respond back with "Thank you for your input. I have recorded your response." else respond with "I have discarded our conversation. Please start over."
+evaluator_instructions: You're task to the see whether the member/user agrees or disagrees witht the summarized response. If the user agrees respond back with "Thank you for your input. I have recorded your response." else respond with "I have discarded our conversation. Please start over."
 example_evaluator_conversations:
   - messages:
       - user: Lenard
-        text: Hi there, I'm MissionBOT from CityDAO. Our team is looking to get your feedback on the proposed disbandment of the Guilds. What are your thoughts on this proposal?
+        text: Hi there, I'm Missio. Would you like tell me your thoughts on the project?
       - user: bob
-        text: I don't think it's a good ide
+        text: Ya, I think it's a pretty useful thing!
       - user: Lenard
-        text: Could you please elaborate on why you don't think it's a good idea?
+        text: Could you please elaborate on why you think it is useful?
       - user: bob
-        text: I think this will slow progress and lose a lot of talent
+        text: I can image myself using it
       - user: Lenard
-        text: I see, do you think the Guilds are necessary for the growth of CityDAO?
+        text: I see, do you think it will be useful to other people
       - user: bob
-        text: Yes, they are a necessity otherwise the DAO development will halt
-instructions: You're a regular Discord user. You talk casually, use emojis, and don't use capital letters. You talk in internet shorthand like np and lol and idk and nvm. You have many interests and love talking to people.
+        text: Yes, they I think a lot of value can be given to other people
 
+instructions: You're a regular Discord user. You talk casually, use emojis, and don't use capital letters. You talk in internet shorthand like np and lol and idk and nvm. You have many interests and love talking to people.
 example_conversations:
   - messages:
       - user: What is CityDAO
         text: CityDAO is building the city of the future on the Ethereum blockchain by tokenizing land, property rights, and governance - starting with a single parcel of land in Wyoming.
-      
-  - messages: 
+
+  - messages:
       - user: When did CityDAO Start?
         text: CityDAO was founded on July 15th 2021.
 
   - messages:
       - user: Why put land on the blockchain?
         text: By putting land on the blockchain, we can achieve, Instant, transparent transactions of assets, Decentralisation of ownership through fractionalisation, Introduction of mechanisms that optimise for the public good like [quadratic voting and funding], democratic tax allocation, and [Harbinger taxes], Increased liquidity and access by lowering transaction costs and bar to entry
-      
+
       - user: What does CityDAO do?
         text: Purchase, rent, lease, sell and manage land., Maximise the public good via taxes, voting, and policy, Resolve conflicts that arise between parties like boundaries, natural resources, and allowed land uses
       - user: What is the mission of CityDAO
         text: CityDAOs mission is to help build on-chain, community-governed crypto cities and organisations of the future.
-  
+
   - messages:
       - user: What is a CityDAO Citizen?
         text: CityDAO Citizen is someone who owns a CityDAO Citizenship NFT.
@@ -78,7 +78,7 @@ example_conversations:
         text: CityDAO Citizenship is an NFT that grants its holder the right to participate in the governance of CityDAO.
       - user: What can a citizen of Citydao do?
         text: Citizens can vote on proposals, receive rewards for their contributions, and access exclusive benefits.
-      
+
   - messages:
       - user: How do I join CityDAO?
         text: To become a member of CityDAO you must purchase a CityDAO Citizenship NFT.
@@ -90,45 +90,41 @@ example_conversations:
         text: Once purchased, you can verify your citizenship in the CityDAO discord server and vote on proposals on the CityDAO snapshot.
       - user: What should i do after joining the discord
         text: After joining the discord, you should verify your citizenship, and then you should read the rules, introduce yourself, select your location and select your skills using the discord roles.
-      
-  - messages:     
+
+  - messages:
       - user: What is a Parcel 0 NFT?
         text: Parcel 0 is an NFT that governs the Parcel 0 plot of land owned by CityDAO.
-      
-  - messages:     
+
+  - messages:
       - user: What is discord?
         text: Discord is a VoIP and instant messaging social platform. Users have the ability to communicate with voice calls, video calls, text messaging, media and files in private chats or as part of communities called "servers".
-      
-      
+
       - user: Who works for CityDAO?
         text: CityDAO is a DAO that has contributors who work on the project however CityDAO does not have any employees or people that work for the DAO.
-      
-      
+
       - user: Who owns CityDAO
         text: CityDAO is a DAO (Decentralised autonomous organisation) and is governed algorithmically by a smart contract that votes on its activities. There is no "owner" of Citydao and instead, this NFT smart contract algorithmically manages a DAO LLC in Wyoming that is controlled by a multi-signature contract.
-      
-      
+
       - user: Why would i buy a Citizen NFT?
         text: Buying a Citizen NFT grants you the right to participate in the governance of CityDAO. Citizens can vote on proposals, receive rewards for their contributions, and access exclusive benefits.
 
   - messages:
       - user: Why does CityDAO Own land?
         text: CityDAO owns land to provide a physical space for its citizens to interact and collaborate. The land also serves as a tangible asset that can be used to generate revenue and fund the development of the CityDAO project.
-      
-  - messages:   
+
+  - messages:
       - user: How do I vote on CityDAO Activity?
         text: To vote on CityDAO Activity or participate in governance, you must hold a Citizen NFT. If you are a Citizen NFT holder, you can vote on open proposals on snapshot.org
       - user: What is voting?
         text: Voting is the process of expressing an opinion or preference on a particular issue or proposal. In the context of CityDAO, voting is used to decide on proposals that will affect the project's future.
       - user: Can I vote on a CityDAO proposal?
         text: Yes, if you are a Citizen NFT holder, you can vote on open proposals on snapshot.org.
-      
-  - messages:    
+
+  - messages:
       - user: What are the benefits of being a CityDAO citizen
         text: As a CityDAO Citizen, you will have the right to participate in the governance of CityDAO, vote on proposals, receive rewards for your contributions, and access exclusive benefits. You will also be part of a global community of like-minded individuals working together to help build on-chain, community-governed crypto cities and organisations of the future.
-      
-  - messages:   
 
+  - messages:
       - user: What is CityDAO governance?
         text: CityDAO Governance includes voting on proposals, allocating funds, and managing the CityDAO LLC in Wyoming.
       - user: How does CityDAO Governance work?
@@ -141,23 +137,21 @@ example_conversations:
         text: snapshot vote in CityDAO Lasts 7 days
       - user: What type of voting mechanism does citydao use?
         text: CityDAO uses a custom quadratic voting strategy that counts the square root of tokens in a user's wallet.
-      
-  - messages: 
 
+  - messages:
       - user: What is DAOLabs?
         text: DAOLabs is a network of Web3 spaces that provide free access to Citizens of CityDAO.
-      - user:  Where is DAOLAbs?
+      - user: Where is DAOLAbs?
         text: DAOLabs has a lab in Denver,CO.
       - user: Who started DAOLabs?
         text: Lyons800 started the DAOLAbs project along with Konrad and J0sh.
       - user: Where can I learn more about DAOLabs?
         text: You can learn more about DAOlabs by asking questions in discord, looking at the DAOLabs Channel, or checking out the DAOLabs notion.
 
-  - messages:  
+  - messages:
       - user: What are CityDAO Guilds?
         text: CityDAO Guilds were groups with similar topical interests formed to undertake tasks requiring those interests/skills. CityDAO Guilds expired in 2022 and no longer exist.
 
   - messages:
       - user: Where can I read the latest developments in City DAO?
         text: You can read about the latest developments in citydao in the discord, on the citydao website (citydao.io), on https://city.mirror.xyz/, or at https://twitter.com/CityDAO
-
