@@ -92,10 +92,110 @@ tree = discord.app_commands.CommandTree(client)
 
 class SimpleView(discord.ui.View):
     
-    @discord.ui.button(label="Click me!")
-    async def hello(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("You clicked the button!", ephemeral=True)
-        await interaction.user.send("You clicked the button!")
+    @discord.ui.select(options=[discord.SelectOption(label="Missio"),discord.SelectOption(label="Missio2")], placeholder="Select an option...")
+    async def userSelect(self, interaction: discord.Interaction, select: discord.ui.Select):
+        # DM specific user
+        try:
+            
+            # only support creating thread in text channel
+            if not isinstance(interaction.channel, discord.TextChannel):
+                return
+
+            # block servers not in allow list
+            if should_block(guild=interaction.guild):
+                return
+
+            embed = discord.Embed(
+                description=f"""
+                Missio is on the job 🤖💬
+                """,
+                color=discord.Color.dark_teal(),
+            )
+
+            # reply to the interaction
+            await interaction.response.send_message(embed=embed)
+
+            
+            ######################### BuildSpace URL or name ############################
+            # Get URL and parse it
+            
+            # Switch statement to check if URL is valid
+            project_name = select.values[0]
+            # Summarize the survey hard coded
+            survey_summary = "TLDR: MissionBot is an intelegent LLM for aligning discourse/mission that allows DAOs to bring alignment of missions, values and opinions in an organisation or DAO. "
+        
+            # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+            # Get the topic qquestion hardcoded
+            
+            survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+            
+            project_url = "https://buildspace.so/"
+            
+            
+        ##########################################################33
+            
+            
+            CHANNEL_ID = 1052665674549428254 # Missio channel ID
+            
+            text_channel = client.get_channel(CHANNEL_ID)
+            
+            # create private thread
+            thread = await text_channel.create_thread(
+                name=f"{ACTIVATE_THREAD_PREFX} {project_name} {interaction.user.name[:20]} - {survey_question[:30]}",
+                slowmode_delay=1,
+                reason="gpt-bot",
+                auto_archive_duration=60,
+                type=ChannelType.private_thread
+            )
+            
+            # Edit sent embed
+            embed = discord.Embed(
+                description=f"""
+                Hey <@{interaction.user.id}>! Missio wants to ask you something 🤖💬
+                
+                {project_name}
+                
+                {survey_summary}
+                
+                {survey_question}
+                """,
+                color=discord.Color.dark_teal(),
+            )
+            
+            embed.add_field(name=f"Project Link" ,value=f"[Click here to view the Project]({project_url})", inline=False)
+                
+            # edit the embed of the message
+            await thread.send(embed=embed)        
+            
+            
+            # Add the user to the thread by @ mentioning them
+            await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{interaction.user.id}>")
+                
+            # Send DM invite link
+            # await user.send(inviteLink)
+            
+            async with thread.typing():
+                # fetch completion
+                messages = [Message(user=interaction.user.name, text=(project_name + '\n' + survey_summary + '\n' + survey_question))]
+                response_data = await generate_starter_response(
+                    messages=messages, user=interaction.user
+                )
+                # send the result
+                await process_response(
+                    user=interaction.user, thread=thread, response_data=response_data
+                )
+                
+        except Exception as e:
+            logger.error(f"Report command error: {e}")
+            return
+            
+        
+        
+    
+    # @discord.ui.button(label="Click me!")
+    # async def hello(self, interaction: discord.Interaction, button: discord.ui.Button, select: discord.ui.Select = None):
+    #     await interaction.response.send_message("You clicked the button!", ephemeral=True)
+    #     await interaction.user.send("You clicked the button!")
 
 
 # Possibly create an ephemeral message
@@ -550,22 +650,48 @@ async def on_message(message: DiscordMessage):
         ):
             
             # Find parent of thread to get the channel ID
-            projectName = thread.name.split()[1].lower() # TODO
+            projectName = thread.name.split()[1].lower()
             
+            existing_tables = list(map(lambda x: x.name, list(dynamodb.tables.all())))
+
+            if projectName not in existing_tables:
+                table = dynamodb.create_table(
+                    AttributeDefinitions=[
+                            {
+                                'AttributeName': 'id',
+                                'AttributeType': 'N'
+                            },
+                        ],
+                    KeySchema=[
+                            {
+                                'AttributeName': 'id',
+                                'KeyType': 'HASH'
+                            },
+                        ],
+                    ProvisionedThroughput={
+                        'ReadCapacityUnits': 5,
+                        'WriteCapacityUnits': 5,
+                    },
+                    TableName=projectName,
+                )
+                
+                table.meta.client.get_waiter('table_exists').wait(TableName=projectName)
+
+
             
             
             table = dynamodb.Table(projectName)
 
             #  record the dislog in the database
             response = table.put_item(
-            Item={
-                    'id' :  message.author.id,
-                    'DiscordID': message.author.id,
-                    'ServerID': message.guild.id,
-                    'RoleID': ','.join(map(lambda x: x.name, message.author.roles)),
-                    'Attestation': next((i for i in map(lambda x: x.text, channel_messages[::-1]) if "To summarize" in i), None), # last item of list with substring -- ITS VERY UGLY
-                    'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::])),
-                }
+                Item={
+                        'id' :  message.author.id,
+                        'DiscordID': message.author.id,
+                        'ServerID': message.guild.id,
+                        'RoleID': ','.join(map(lambda x: x.name, message.author.roles)),
+                        'Attestation': next((i for i in map(lambda x: x.text, channel_messages[::-1]) if "To summarize" in i), None), # last item of list with substring -- ITS VERY UGLY
+                        'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::])),
+                    }
             )
         
             print("PutItem succeeded:")
@@ -599,7 +725,7 @@ async def on_message(message: DiscordMessage):
                     vectorizer_model = CountVectorizer(stop_words="english")
                     # Train BERTopic
                     topic_model = BERTopic(vectorizer_model=vectorizer_model).fit(docs, embeddings)
-                    hierarchical_topics = topic_model.hierarchical_topics(docs)
+                    # hierarchical_topics = topic_model.hierarchical_topics(docs)
 
 
                     fig_bar_chart =topic_model.visualize_barchart()
@@ -618,7 +744,7 @@ async def on_message(message: DiscordMessage):
                 df['ServerID'] = pd.to_numeric(df['ServerID'])
 
                 # Initialize a new run
-                run = wandb.init(project=project_name, entity="slyracoon23", name="BERT Topic Model")
+                run = wandb.init(project=project_name, entity="identi3", name="BERT Topic Model")
 
                 run.log({"Table": df })
 
@@ -663,7 +789,7 @@ async def on_message(message: DiscordMessage):
 @tree.command(name="survey", description="Create a query message to start a conversation in DMs") 
 @discord.app_commands.checks.has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
-async def survey_command(int: discord.Interaction, url: str, user: discord.User):
+async def survey_command(int: discord.Interaction, project_name: str, user: discord.User):
     # DM specific user
     try:
         
@@ -690,7 +816,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         # Get URL and parse it
         
         # Switch statement to check if URL is valid
-        project_name = "missio"
+        project_name = project_name.lower()
         # Summarize the survey hard coded
         survey_summary = "TLDR: MissionBot is an intelegent LLM for aligning discourse/mission that allows DAOs to bring alignment of missions, values and opinions in an organisation or DAO. "
        
@@ -759,7 +885,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         logger.error(f"Report command error: {e}")
         return
 
-    
+  
     
 
 client.run(DISCORD_BOT_TOKEN)
