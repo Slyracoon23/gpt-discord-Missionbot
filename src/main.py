@@ -46,6 +46,14 @@ import re
 import json
 
 
+import wandb
+import pandas as pd
+from sklearn.datasets import fetch_20newsgroups
+from sentence_transformers import SentenceTransformer
+from bertopic import BERTopic
+from umap import UMAP
+from sklearn.feature_extraction.text import CountVectorizer
+
 import boto3, json, decimal
 
 from botocore.exceptions import ClientError
@@ -542,10 +550,11 @@ async def on_message(message: DiscordMessage):
         ):
             
             # Find parent of thread to get the channel ID
-            parentName = thread.parent.name
-            parentID = thread.parent.id
+            projectName = thread.name.split()[0] # TODO
             
-            table = dynamodb.Table(parentName)
+            
+            
+            table = dynamodb.Table(projectName)
 
             #  record the dislog in the database
             response = table.put_item(
@@ -565,6 +574,66 @@ async def on_message(message: DiscordMessage):
             ## Recieve all responses from the database
             
             
+            def wandb_run(project_name):
+                # Use the scan method to fetch all items in the table
+                response = table.scan()
+
+                # Iterate through the items and print the summary field
+                # for item in response['Items']:
+                #     print(item['Attestation'])
+
+                items = response['Items']
+
+
+                docs = map(lambda x: x['Attestation'], items)
+
+                if len(items) > 20:
+                    docs = docs * 10
+
+                    # embedding
+                    sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+                    embeddings = sentence_model.encode(docs, show_progress_bar=False)
+
+
+                    # Remove en
+                    vectorizer_model = CountVectorizer(stop_words="english")
+                    # Train BERTopic
+                    topic_model = BERTopic(vectorizer_model=vectorizer_model).fit(docs, embeddings)
+                    hierarchical_topics = topic_model.hierarchical_topics(docs)
+
+
+                    fig_bar_chart =topic_model.visualize_barchart()
+
+
+                    # Run the visualization with the original embeddings
+                    fig_embedding = topic_model.visualize_documents(docs, embeddings=embeddings)
+
+
+                df = pd.DataFrame(items)
+
+                df['id'] = pd.to_numeric(df['id'])
+
+                df['DiscordID'] = pd.to_numeric(df['DiscordID'])
+
+                df['ServerID'] = pd.to_numeric(df['ServerID'])
+
+                # Initialize a new run
+                run = wandb.init(project=project_name, entity="slyracoon23", name="BERT Topic Model")
+
+                run.log({"Table": df })
+
+                if len(items) > 20:
+                    # Log Table
+                    run.log({"Topic-Embedded-Chart": fig_embedding})
+
+                    run.log({"Topic-Bar-Chart": fig_bar_chart})
+
+
+
+                wandb.finish()
+            
+            
+            wandb_run(projectName)
             
                            
             
@@ -631,7 +700,7 @@ async def survey_command(int: discord.Interaction, url: str, user: discord.User)
         
         # create private thread
         thread = await text_channel.create_thread(
-            name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {survey_question[:30]}",
+            name=f"{project_name} {user.name[:20]} - {survey_question[:30]}",
             slowmode_delay=1,
             reason="gpt-bot",
             auto_archive_duration=60,
