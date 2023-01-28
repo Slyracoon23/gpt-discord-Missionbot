@@ -69,11 +69,14 @@ dynamodb = session.resource('dynamodb', region_name='eu-central-1')
 
 
 project_name_discord_option_list = []
+project_list = []
 
 with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
     for project in reader:
         project_name_discord_option_list.append(discord.SelectOption(label=project["project-name"]))
-            
+        
+        project_list.append(project)
+
 
                 
         
@@ -104,7 +107,7 @@ tree = discord.app_commands.CommandTree(client)
 
 class SimpleView(discord.ui.View):
     
-    @discord.ui.select(options=project_name_discord_option_list, placeholder="Select an option...")
+    @discord.ui.select(options=project_name_discord_option_list[:10], placeholder="Select an option...")
     async def userSelect(self, interaction: discord.Interaction, select: discord.ui.Select):
         # DM specific user
         try:
@@ -120,29 +123,28 @@ class SimpleView(discord.ui.View):
             ######################### BuildSpace URL or name ############################
             # Get URL and parse it
                 
-            with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
-                for project in reader:
+            for project in project_list:
+                
+                if project["project-name"].lower() == select.values[0].lower():
                     
-                    if project["project-name"].lower() == select.values[0].lower():
-                        
-            
-                        # Switch statement to check if URL is valid
-                        project_name = project["project-name"]
-                        # Summarize the survey hard coded
-                        survey_summary = project["project-summary"]
+        
+                    # Switch statement to check if URL is valid
+                    project_name = project["project-name"]
+                    # Summarize the survey hard coded
+                    survey_summary = project["project-summary"]
+                
+                    # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+                    # Get the topic qquestion hardcoded
                     
-                        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-                        # Get the topic qquestion hardcoded
-                        
-                        survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
-                        
-                        project_url = project["project-url"]
-                        
-                        break
+                    survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+                    
+                    project_url = project["project-url"]
+                    
+                    break
 
-                else:
-                    await interaction.response.send_message("Project not found")
-                    return
+            else:
+                await interaction.response.send_message("Project not found")
+                return
                     
         ##########################################################33
                 
@@ -827,29 +829,28 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
         if should_block(guild=int.guild):
             return
         
-        with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
-            for project in reader:
+        for project in project_list:
+            
+            if project["project-name"].lower() == project_name.lower():
                 
-                if project["project-name"].lower() == project_name.lower():
-                    
-        
-                    # Switch statement to check if URL is valid
-                    project_name = project["project-name"]
-                    # Summarize the survey hard coded
-                    survey_summary = project["project-summary"]
+    
+                # Switch statement to check if URL is valid
+                project_name = project["project-name"]
+                # Summarize the survey hard coded
+                survey_summary = project["project-summary"]
+            
+                # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+                # Get the topic qquestion hardcoded
                 
-                    # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-                    # Get the topic qquestion hardcoded
-                    
-                    survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
-                    
-                    project_url = project["project-url"]
-                    
-                    break
+                survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+                
+                project_url = project["project-url"]
+                
+                break
 
-            else:
-                await int.response.send_message("Project not found")
-                return
+        else:
+            await int.response.send_message("Project not found")
+            return
 
         embed = discord.Embed(
             description=f"""
@@ -921,7 +922,142 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
         logger.error(f"Report command error: {e}")
         return
 
-  
+# /query message:
+@tree.command(name="survey-discourse", description="Create a query message to start a conversation in DMs") 
+@discord.app_commands.checks.has_permissions(send_messages=True)
+@discord.app_commands.checks.bot_has_permissions(send_messages=True)
+async def survey_discourse_command(int: discord.Interaction, url: str, user: discord.User):
+    # DM specific user
+    try:
+        
+        # only support creating thread in text channel
+        if not isinstance(int.channel, discord.TextChannel):
+            return
+
+        # block servers not in allow list
+        if should_block(guild=int.guild):
+            return
+
+        ######################### Discourse URL ############################
+        # Get URL and parse it
+        # Disource URL is a topic URL https://docs.discourse.org/#tag/Topics/operation/getTopic
+        
+        # validate domain name
+        domain_name = "https://forum.citydao.io/t/"
+        if not url.startswith(domain_name):
+            logger.info("Invalid URL")
+            return
+        
+        # extract ID from URL using regular expressions
+        match = re.search(r'\/\d+', url)
+        
+        if match:
+            id = match.group()[1:] # remove the first slash
+        else:
+            logger.info("No ID found in URL")
+            return
+        
+        
+        # Get the topic from Discourse
+        api_url = f'{domain_name}{id}.json'
+        
+        headers = {
+            'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
+            'Api-Username': 'system'
+            }
+
+        response = requests.request("GET", api_url, headers=headers)
+
+
+        if response.status_code != 200:
+            logger.info("Error getting topic from Discourse")
+            return
+        
+        
+        json_obj = json.loads(response.text)
+
+        
+        topic_slug = json_obj['post_stream']['posts'][0]['topic_slug']
+        
+        post_proposal = json_obj['post_stream']['posts'][0]['cooked']
+       
+        
+        embed = discord.Embed(
+            description=f"""
+            Missio is on the job 🤖💬
+            """,
+            color=discord.Color.dark_teal(),
+        )
+
+        # reply to the interaction
+        await int.response.send_message(embed=embed)
+
+        
+        # Summarize the topic
+        survey_summary = await generate_survey_summary(
+                    survey_post=post_proposal
+        )
+        
+        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+        # Get the topic question from LLM
+        survey_question = await generate_survey_question(
+                    survey_post=post_proposal, summary=survey_summary
+                )
+    
+         
+        CHANNEL_ID = 1065386164594417727
+        
+        text_channel = client.get_channel(CHANNEL_ID)
+        
+        # create private thread
+        thread = await text_channel.create_thread(
+            name=f"{ACTIVATE_THREAD_PREFX} CityDAO {user.name[:20]} - {survey_question[:30]}",
+            slowmode_delay=1,
+            reason="gpt-bot",
+            auto_archive_duration=60,
+            type=ChannelType.private_thread
+        )
+        
+          # Edit sent embed
+        embed = discord.Embed(
+            description=f"""
+            Hey <@{user.id}>! Missio wants to ask you something 🤖💬
+            
+            {topic_slug}
+            
+            {survey_summary}
+            
+            {survey_question}
+            """,
+            color=discord.Color.dark_teal(),
+        )
+        
+        embed.add_field(name=f"Proposal Link" ,value=f"[Click here to view Original Proposal]({url})", inline=False)
+            
+        # edit the embed of the message
+        await thread.send(embed=embed)        
+           
+        
+        # Add the user to the thread by @ mentioning them
+        await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
+            
+        # Send DM invite link
+        # await user.send(inviteLink)
+        
+        async with thread.typing():
+            # fetch completion
+            messages = [Message(user=user.name, text=survey_question)]
+            response_data = await generate_starter_response(
+                messages=messages, user=user
+            )
+            # send the result
+            await process_response(
+                user=user, thread=thread, response_data=response_data
+            )
+            
+    except Exception as e:
+        logger.error(f"Report command error: {e}")
+        return
     
 
 client.run(DISCORD_BOT_TOKEN)
