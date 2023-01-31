@@ -71,7 +71,7 @@ dynamodb = session.resource('dynamodb', region_name='eu-central-1')
 project_name_discord_option_list = []
 project_list = []
 
-with jsonlines.open("/home/slyracoon23/Documents/buildspace/gpt-discord-bot/src/buildspace-projects.jsonl") as reader:
+with jsonlines.open("src/buildspace-projects.jsonl") as reader:
     for project in reader:
         project_name_discord_option_list.append(discord.SelectOption(label=project["project-name"]))
         
