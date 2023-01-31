@@ -5,3 +5,8 @@ PyYAML==6.0
 dacite==1.6.*
 boto3==1.24.*
 jsonlines== 2.0.*
+wandb==0.13.*
+pandas==1.5.*
+scikit-learn==1.1.*
+bertopic==0.13.*
+sentence-transformers==2.2.*
