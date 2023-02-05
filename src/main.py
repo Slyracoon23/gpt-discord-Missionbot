@@ -26,11 +26,11 @@ from src.utils import (
 )
 from src import completion
 from src.completion import (
-    generate_completion_response, 
-    generate_summarisation_response, 
-    generate_starter_response, 
-    generate_evaluator_response, 
-    process_response, 
+    generate_completion_response,
+    generate_summarisation_response,
+    generate_starter_response,
+    generate_evaluator_response,
+    process_response,
     is_last_response_termination_message,
     generate_survey_question,
     generate_survey_summary,
@@ -47,7 +47,6 @@ import json
 import jsonlines
 
 
-
 import wandb
 import pandas as pd
 from sklearn.datasets import fetch_20newsgroups
@@ -56,7 +55,9 @@ from bertopic import BERTopic
 # from umap import UMAP
 from sklearn.feature_extraction.text import CountVectorizer
 
-import boto3, json, decimal
+import boto3
+import json
+import decimal
 
 from botocore.exceptions import ClientError
 
@@ -71,15 +72,18 @@ dynamodb = session.resource('dynamodb', region_name='eu-central-1')
 project_name_discord_option_list = []
 project_list = []
 
+
 with jsonlines.open("src/buildspace-projects.jsonl") as reader:
     for project in reader:
-        project_name_discord_option_list.append(discord.SelectOption(label=project["project-name"]))
-        
+        project_name_discord_option_list.append(
+            discord.SelectOption(label=project["project-name"]))
+
         project_list.append(project)
 
 
-                
-        
+CHANNEL_ID = 1071524186490679308  # Missio channel ID
+FORUM_CHANNEL_ID = 1071801106545516564  # Forum Channel Id
+
 
 # Helper class to convert a DynamoDB item to JSON.
 class DecimalEncoder(json.JSONEncoder):
@@ -92,157 +96,43 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(o)
 
 
-
-
 logging.basicConfig(
     format="[%(asctime)s] [%(filename)s:%(lineno)d] %(message)s", level=logging.INFO
 )
 
 intents = discord.Intents.default()
-intents.members=True
+intents.members = True
 intents.message_content = True
 
 client = discord.Client(intents=intents)
 tree = discord.app_commands.CommandTree(client)
 
+
 class SimpleView(discord.ui.View):
-    
-    @discord.ui.select(options=project_name_discord_option_list[:10], placeholder="Select an option...")
-    async def userSelect(self, interaction: discord.Interaction, select: discord.ui.Select):
-        # DM specific user
-        try:
-            
-            # only support creating thread in text channel
-            if not isinstance(interaction.channel, discord.TextChannel):
-                return
 
-            # block servers not in allow list
-            if should_block(guild=interaction.guild):
-                return
-
-            ######################### BuildSpace URL or name ############################
-            # Get URL and parse it
-                
-            for project in project_list:
-                
-                if project["project-name"].lower() == select.values[0].lower():
-                    
-        
-                    # Switch statement to check if URL is valid
-                    project_name = project["project-name"]
-                    # Summarize the survey hard coded
-                    survey_summary = project["project-summary"]
-                
-                    # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-                    # Get the topic qquestion hardcoded
-                    
-                    survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
-                    
-                    project_url = project["project-url"]
-                    
-                    break
-
-            else:
-                await interaction.response.send_message("Project not found")
-                return
-                    
-        ##########################################################33
-                
-            embed = discord.Embed(
-                description=f"""
-                Missio is on the job 🤖💬
-                """,
-                color=discord.Color.dark_teal(),
-            )
-
-            # reply to the interaction
-            await interaction.response.send_message(embed=embed)
-
-            
-            
-            
-            
-            
-            CHANNEL_ID = 1065386164594417727 # Missio channel ID
-            
-            text_channel = client.get_channel(CHANNEL_ID)
-            
-            # create private thread
-            thread = await text_channel.create_thread(
-                name=f"{ACTIVATE_THREAD_PREFX} {project_name} {interaction.user.name[:20]} - {survey_question[:30]}",
-                slowmode_delay=1,
-                reason="gpt-bot",
-                auto_archive_duration=60,
-                type=ChannelType.private_thread
-            )
-            
-            # Edit sent embed
-            embed = discord.Embed(
-                description=f"""
-                Hey <@{interaction.user.id}>! Missio wants to ask you something 🤖💬
-                
-                {project_name}
-                
-                {survey_summary}
-                
-                {survey_question}
-                """,
-                color=discord.Color.dark_teal(),
-            )
-            
-            embed.add_field(name=f"Project Link" ,value=f"[Click here to view the Project]({project_url})", inline=False)
-                
-            # edit the embed of the message
-            await thread.send(embed=embed)        
-            
-            
-            # Add the user to the thread by @ mentioning them
-            await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{interaction.user.id}>")
-                
-            # Send DM invite link
-            # await user.send(inviteLink)
-            
-            async with thread.typing():
-                # fetch completion
-                messages = [Message(user=interaction.user.name, text=(project_name + '\n' + survey_summary + '\n' + survey_question))]
-                response_data = await generate_starter_response(
-                    messages=messages, user=interaction.user
-                )
-                # send the result
-                await process_response(
-                    user=interaction.user, thread=thread, response_data=response_data
-                )
-                
-        except Exception as e:
-            logger.error(f"Report command error: {e}")
-            return
-            
-        
-        
-    
-    # @discord.ui.button(label="Click me!")
-    # async def hello(self, interaction: discord.Interaction, button: discord.ui.Button, select: discord.ui.Select = None):
-    #     await interaction.response.send_message("You clicked the button!", ephemeral=True)
-    #     await interaction.user.send("You clicked the button!")
+    @discord.ui.button(label="Click me!")
+    async def hello(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("You clicked the button!", ephemeral=True)
+        await interaction.user.send("You clicked the button!")
 
 
 # Possibly create an ephemeral message
 @client.event
 async def on_member_join(member):
-    channel = client.get_channel(1065386164594417727) # Welcome channel ID
-    embed=discord.Embed(title=f"Welcome {member.name}", description=f"Thanks for joining {member.guild.name}!") # F-Strings!
-    
+    channel = client.get_channel(1065386164594417727)  # Welcome channel ID
+    embed = discord.Embed(
+        title=f"Welcome {member.name}", description=f"Thanks for joining {member.guild.name}!")  # F-Strings!
+
     # embed.set_thumbnail(url=member.avatar_url) # Set the embed's thumbnail to the member's avatar image!
 
     await channel.send(embed=embed)
-    
+
     view = SimpleView()
     # button = discord.ui.Button(label="Default Button", style=discord.ButtonStyle.primary)
     # view.add_item(button)
     await channel.send("Click the button!", view=view)
 
-    
-    
+
 # @client.event
 # async def on_button_click(interaction):
 #     # if interaction.component.label.startswith("Default Button"):
@@ -252,7 +142,8 @@ async def on_member_join(member):
 
 @client.event
 async def on_ready():
-    logger.info(f"We have logged in as {client.user}. Invite URL: {BOT_INVITE_URL}")
+    logger.info(
+        f"We have logged in as {client.user}. Invite URL: {BOT_INVITE_URL}")
     completion.MY_BOT_NAME = client.user.name
     completion.MY_BOT_EXAMPLE_CONVOS = []
     for c in EXAMPLE_CONVOS:
@@ -262,11 +153,14 @@ async def on_ready():
                 messages.append(Message(user=client.user.name, text=m.text))
             else:
                 messages.append(m)
-        completion.MY_BOT_EXAMPLE_CONVOS.append(Conversation(messages=messages))
+        completion.MY_BOT_EXAMPLE_CONVOS.append(
+            Conversation(messages=messages))
     await tree.sync()
 
-## Create a report page
-#/report message:
+# Create a report page
+# /report message:
+
+
 @tree.command(name="report", description="Create a report page image and url link")
 async def report_command(int: discord.Interaction, user: discord.Member):
     try:
@@ -279,11 +173,12 @@ async def report_command(int: discord.Interaction, user: discord.Member):
             """,
             color=discord.Color.dark_teal(),
         )
-        
-        embed.add_field(name=f"{user.name}'s Report Card" ,value="[Click here to view your report]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
-        
+
+        embed.add_field(name=f"{user.name}'s Report Card",
+                        value="[Click here to view your report]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
+
         await int.response.send_message(embed=embed)
-            
+
     except Exception as e:
         logger.error(f"Report command error: {e}")
         return
@@ -310,7 +205,8 @@ async def query_command(int: discord.Interaction, message: str, user: discord.Me
         logger.info(f"Query command by {queryor} {message[:20]} to {user}")
         try:
             # moderate the message
-            flagged_str, blocked_str = moderate_message(message=message, user=queryor)
+            flagged_str, blocked_str = moderate_message(
+                message=message, user=queryor)
             await send_moderation_blocked_message(
                 guild=int.guild,
                 user=queryor,
@@ -324,8 +220,7 @@ async def query_command(int: discord.Interaction, message: str, user: discord.Me
                     ephemeral=True,
                 )
                 return
-            
-            
+
             # Add thread dialog description
             embed = discord.Embed(
                 description=f"""
@@ -339,8 +234,7 @@ async def query_command(int: discord.Interaction, message: str, user: discord.Me
                 """,
                 color=discord.Color.green(),
             )
-                
-            
+
             embed.add_field(name=user.name, value=message)
 
             if len(flagged_str) > 0:
@@ -358,14 +252,14 @@ async def query_command(int: discord.Interaction, message: str, user: discord.Me
                 message=message,
                 url=response.jump_url,
             )
-            
+
         except Exception as e:
             logger.exception(e)
             await int.response.send_message(
                 f"Failed to start chat {str(e)}", ephemeral=True
             )
             return
-        
+
           # create the thread
         thread = await response.create_thread(
             name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {message[:30]}",
@@ -373,7 +267,7 @@ async def query_command(int: discord.Interaction, message: str, user: discord.Me
             reason="gpt-bot",
             auto_archive_duration=60,
         )
-            
+
         async with thread.typing():
             # fetch completion
             messages = [Message(user=user.name, text=message)]
@@ -384,7 +278,7 @@ async def query_command(int: discord.Interaction, message: str, user: discord.Me
             await process_response(
                 user=user, thread=thread, response_data=response_data
             )
-            
+
     except Exception as e:
         logger.exception(e)
         await int.response.send_message(
@@ -413,7 +307,8 @@ async def chat_command(int: discord.Interaction, message: str):
         logger.info(f"Chat command by {user} {message[:20]}")
         try:
             # moderate the message
-            flagged_str, blocked_str = moderate_message(message=message, user=user)
+            flagged_str, blocked_str = moderate_message(
+                message=message, user=user)
             await send_moderation_blocked_message(
                 guild=int.guild,
                 user=user,
@@ -441,7 +336,7 @@ async def chat_command(int: discord.Interaction, message: str):
                 """,
                 color=discord.Color.green(),
             )
-            
+
             embed.add_field(name=user.name, value=message)
 
             if len(flagged_str) > 0:
@@ -493,8 +388,8 @@ async def chat_command(int: discord.Interaction, message: str):
 # calls for each message
 @client.event
 async def on_message(message: DiscordMessage):
-    try:    
-        # TODO: allow DMs to be used for chat      
+    try:
+        # TODO: allow DMs to be used for chat
         # block servers not in allow list
         if should_block(guild=message.guild):
             return
@@ -601,30 +496,29 @@ async def on_message(message: DiscordMessage):
         ):
             COMPLETED_MESSAGE = '✅'
             STOP_MESSAGE = '❌'
-                    
-            if thread.last_message.content.lower() == COMPLETED_MESSAGE :
+
+            if thread.last_message.content.lower() == COMPLETED_MESSAGE:
                 # generate closing message and summarise
-                 await thread.send(
+                await thread.send(
                     embed=discord.Embed(
                         description=f"**{message.author}'s message has been Submitted!**",
                         color=discord.Color.green(),
                     )
                 )
-                
-                 return
-                    
-            
+
+                return
+
             elif thread.last_message.content.lower() == STOP_MESSAGE:
                 # generate closing message and Exit
-                 await thread.send(
+                await thread.send(
                     embed=discord.Embed(
                         description=f"❌ **{message.author}'s Conversation has been deleted.**",
                         color=discord.Color.red(),
                     )
                 )
-                 
-                 return
-                 
+
+                return
+
             else:
                 # User needs to send a valid closing message
                 await thread.send(
@@ -634,29 +528,29 @@ async def on_message(message: DiscordMessage):
                     )
                 )
                 return
-              
+
         elif is_summarize_active(
-                messages=channel_messages,
-            ):
-            # generate summarized response mode     
+            messages=channel_messages,
+        ):
+            # generate summarized response mode
             async with thread.typing():
                 response_data = await generate_summarisation_response(
                     messages=channel_messages, user=message.author
                 )
 
-        elif  is_evaluator_active(
-                messages=channel_messages,
-            ): 
-            
-            # generate summarized response mode     
+        elif is_evaluator_active(
+            messages=channel_messages,
+        ):
+
+            # generate summarized response mode
             async with thread.typing():
                 response_data = await generate_evaluator_response(
                     messages=channel_messages, user=message.author
                 )
-        
+
         else:
             # generate standard response mode
-             async with thread.typing():
+            async with thread.typing():
                 response_data = await generate_starter_response(
                     messages=channel_messages, user=message.author
                 )
@@ -672,62 +566,61 @@ async def on_message(message: DiscordMessage):
         ):
             # there is another message and its not from us, so ignore this response
             return
-        
+
         if is_last_response_termination_message(
             response_data=response_data,
         ):
-            
+
             # Find parent of thread to get the channel ID
             projectName = thread.name.split()[1].lower()
-            
-            existing_tables = list(map(lambda x: x.name, list(dynamodb.tables.all())))
+
+            existing_tables = list(
+                map(lambda x: x.name, list(dynamodb.tables.all())))
 
             if projectName not in existing_tables:
                 table = dynamodb.create_table(
                     AttributeDefinitions=[
-                            {
-                                'AttributeName': 'id',
-                                'AttributeType': 'N'
-                            },
-                        ],
+                        {
+                            'AttributeName': 'id',
+                            'AttributeType': 'N'
+                        },
+                    ],
                     KeySchema=[
-                            {
-                                'AttributeName': 'id',
-                                'KeyType': 'HASH'
-                            },
-                        ],
+                        {
+                            'AttributeName': 'id',
+                            'KeyType': 'HASH'
+                        },
+                    ],
                     ProvisionedThroughput={
                         'ReadCapacityUnits': 5,
                         'WriteCapacityUnits': 5,
                     },
                     TableName=projectName,
                 )
-                
-                table.meta.client.get_waiter('table_exists').wait(TableName=projectName)
 
+                table.meta.client.get_waiter(
+                    'table_exists').wait(TableName=projectName)
 
-            
-            
             table = dynamodb.Table(projectName)
 
             #  record the dislog in the database
             response = table.put_item(
                 Item={
-                        'id' :  message.author.id,
-                        'DiscordID': message.author.id,
-                        'ServerID': message.guild.id,
-                        'RoleID': ','.join(map(lambda x: x.name, message.author.roles)),
-                        'Attestation': next((i for i in map(lambda x: x.text, channel_messages[::-1]) if "To summarize" in i), None), # last item of list with substring -- ITS VERY UGLY
-                        'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::])),
-                    }
+                    'id':  message.author.id,
+                    'DiscordID': message.author.id,
+                    'ServerID': message.guild.id,
+                    'RoleID': ','.join(map(lambda x: x.name, message.author.roles)),
+                    # last item of list with substring -- ITS VERY UGLY
+                    'Attestation': next((i for i in map(lambda x: x.text, channel_messages[::-1]) if "To summarize" in i), None),
+                    'Dialogue': ','.join(map(lambda x: x.text, channel_messages[::])),
+                }
             )
-        
+
             print("PutItem succeeded:")
             print(json.dumps(response, indent=4, cls=DecimalEncoder))
-            
-            ## Recieve all responses from the database
-            
-            
+
+            # Recieve all responses from the database
+
             def wandb_run(project_name):
                 # Use the scan method to fetch all items in the table
                 response = table.scan()
@@ -738,7 +631,6 @@ async def on_message(message: DiscordMessage):
 
                 items = response['Items']
 
-
                 docs = map(lambda x: x['Attestation'], items)
 
                 if len(items) > 20:
@@ -746,22 +638,21 @@ async def on_message(message: DiscordMessage):
 
                     # embedding
                     sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
-                    embeddings = sentence_model.encode(docs, show_progress_bar=False)
-
+                    embeddings = sentence_model.encode(
+                        docs, show_progress_bar=False)
 
                     # Remove en
                     vectorizer_model = CountVectorizer(stop_words="english")
                     # Train BERTopic
-                    topic_model = BERTopic(vectorizer_model=vectorizer_model).fit(docs, embeddings)
+                    topic_model = BERTopic(
+                        vectorizer_model=vectorizer_model).fit(docs, embeddings)
                     # hierarchical_topics = topic_model.hierarchical_topics(docs)
 
-
-                    fig_bar_chart =topic_model.visualize_barchart()
-
+                    fig_bar_chart = topic_model.visualize_barchart()
 
                     # Run the visualization with the original embeddings
-                    fig_embedding = topic_model.visualize_documents(docs, embeddings=embeddings)
-
+                    fig_embedding = topic_model.visualize_documents(
+                        docs, embeddings=embeddings)
 
                 df = pd.DataFrame(items)
 
@@ -772,9 +663,10 @@ async def on_message(message: DiscordMessage):
                 df['ServerID'] = pd.to_numeric(df['ServerID'])
 
                 # Initialize a new run
-                run = wandb.init(project=project_name, entity="identi3", name="BERT Topic Model")
+                run = wandb.init(project=project_name,
+                                 entity="identi3", name="BERT Topic Model")
 
-                run.log({"Table": df })
+                run.log({"Table": df})
 
                 if len(items) > 20:
                     # Log Table
@@ -782,26 +674,21 @@ async def on_message(message: DiscordMessage):
 
                     run.log({"Topic-Bar-Chart": fig_bar_chart})
 
-
-
                 wandb.finish()
-                
+
                 return run.get_url()
-            
-            
+
             wandb_url = wandb_run(projectName)
-            
+
             embed = discord.Embed(
-            description=f"""
+                description=f"""
             Your report run is complete! You can view the results at {wandb_url}
             """,
-            color=discord.Color.dark_teal(),
+                color=discord.Color.dark_teal(),
             )
             # edit the embed of the message
-            await thread.send(embed=embed)     
-            
-            
-            
+            await thread.send(embed=embed)
+
         # send response
         await process_response(
             user=message.author, thread=thread, response_data=response_data
@@ -810,17 +697,14 @@ async def on_message(message: DiscordMessage):
         logger.exception(e)
 
 
-
-
-
 # /query message:
-@tree.command(name="survey", description="Create a query message to start a conversation in DMs") 
+@tree.command(name="survey", description="Create a query message to start a conversation in DMs")
 @discord.app_commands.checks.has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
 async def survey_command(int: discord.Interaction, project_name: str, user: discord.User):
     # DM specific user
     try:
-        
+
         # only support creating thread in text channel
         if not isinstance(int.channel, discord.TextChannel):
             return
@@ -828,24 +712,23 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
         # block servers not in allow list
         if should_block(guild=int.guild):
             return
-        
+
         for project in project_list:
-            
+
             if project["project-name"].lower() == project_name.lower():
-                
-    
+
                 # Switch statement to check if URL is valid
                 project_name = project["project-name"]
                 # Summarize the survey hard coded
                 survey_summary = project["project-summary"]
-            
+
                 # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
                 # Get the topic qquestion hardcoded
-                
+
                 survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
-                
+
                 project_url = project["project-url"]
-                
+
                 break
 
         else:
@@ -862,16 +745,10 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
         # reply to the interaction
         await int.response.send_message(embed=embed)
 
-        
-       
-         
-       ##########################################################33
-        
-        
-        CHANNEL_ID = 1065386164594417727 # Missio channel ID
-        
+       # 33
+
         text_channel = client.get_channel(CHANNEL_ID)
-        
+
         # create private thread
         thread = await text_channel.create_thread(
             name=f"{ACTIVATE_THREAD_PREFX} {project_name} {user.name[:20]} - {survey_question[:30]}",
@@ -880,8 +757,8 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
             auto_archive_duration=60,
             type=ChannelType.private_thread
         )
-        
-          # Edit sent embed
+
+        # Edit sent embed
         embed = discord.Embed(
             description=f"""
             Hey <@{user.id}>! Missio wants to ask you something 🤖💬
@@ -894,22 +771,23 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
             """,
             color=discord.Color.dark_teal(),
         )
-        
-        embed.add_field(name=f"Project Link" ,value=f"[Click here to view the Project]({project_url})", inline=False)
-            
+
+        embed.add_field(name=f"Project Link",
+                        value=f"[Click here to view the Project]({project_url})", inline=False)
+
         # edit the embed of the message
-        await thread.send(embed=embed)        
-           
-        
+        await thread.send(embed=embed)
+
         # Add the user to the thread by @ mentioning them
         await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
-            
+
         # Send DM invite link
         # await user.send(inviteLink)
-        
+
         async with thread.typing():
             # fetch completion
-            messages = [Message(user=user.name, text=(project_name + '\n' + survey_summary + '\n' + survey_question))]
+            messages = [Message(user=user.name, text=(
+                project_name + '\n' + survey_summary + '\n' + survey_question))]
             response_data = await generate_starter_response(
                 messages=messages, user=user
             )
@@ -917,19 +795,20 @@ async def survey_command(int: discord.Interaction, project_name: str, user: disc
             await process_response(
                 user=user, thread=thread, response_data=response_data
             )
-            
+
     except Exception as e:
         logger.error(f"Report command error: {e}")
         return
 
+
 # /query message:
-@tree.command(name="survey-discourse", description="Create a query message to start a conversation in DMs") 
+@tree.command(name="survey-discourse", description="Create a query message to start a conversation in DMs")
 @discord.app_commands.checks.has_permissions(send_messages=True)
 @discord.app_commands.checks.bot_has_permissions(send_messages=True)
 async def survey_discourse_command(int: discord.Interaction, url: str, user: discord.User):
     # DM specific user
     try:
-        
+
         # only support creating thread in text channel
         if not isinstance(int.channel, discord.TextChannel):
             return
@@ -941,47 +820,42 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
         ######################### Discourse URL ############################
         # Get URL and parse it
         # Disource URL is a topic URL https://docs.discourse.org/#tag/Topics/operation/getTopic
-        
+
         # validate domain name
         domain_name = "https://forum.citydao.io/t/"
         if not url.startswith(domain_name):
             logger.info("Invalid URL")
             return
-        
+
         # extract ID from URL using regular expressions
         match = re.search(r'\/\d+', url)
-        
+
         if match:
-            id = match.group()[1:] # remove the first slash
+            id = match.group()[1:]  # remove the first slash
         else:
             logger.info("No ID found in URL")
             return
-        
-        
+
         # Get the topic from Discourse
         api_url = f'{domain_name}{id}.json'
-        
+
         headers = {
             'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
             'Api-Username': 'system'
-            }
+        }
 
         response = requests.request("GET", api_url, headers=headers)
-
 
         if response.status_code != 200:
             logger.info("Error getting topic from Discourse")
             return
-        
-        
+
         json_obj = json.loads(response.text)
 
-        
         topic_slug = json_obj['post_stream']['posts'][0]['topic_slug']
-        
+
         post_proposal = json_obj['post_stream']['posts'][0]['cooked']
-       
-        
+
         embed = discord.Embed(
             description=f"""
             Missio is on the job 🤖💬
@@ -992,23 +866,19 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
         # reply to the interaction
         await int.response.send_message(embed=embed)
 
-        
         # Summarize the topic
         survey_summary = await generate_survey_summary(
-                    survey_post=post_proposal
+            survey_post=post_proposal
         )
-        
+
         # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
         # Get the topic question from LLM
         survey_question = await generate_survey_question(
-                    survey_post=post_proposal, summary=survey_summary
-                )
-    
-         
-        CHANNEL_ID = 1065386164594417727
-        
+            survey_post=post_proposal, summary=survey_summary
+        )
+
         text_channel = client.get_channel(CHANNEL_ID)
-        
+
         # create private thread
         thread = await text_channel.create_thread(
             name=f"{ACTIVATE_THREAD_PREFX} CityDAO {user.name[:20]} - {survey_question[:30]}",
@@ -1017,8 +887,8 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
             auto_archive_duration=60,
             type=ChannelType.private_thread
         )
-        
-          # Edit sent embed
+
+        # Edit sent embed
         embed = discord.Embed(
             description=f"""
             Hey <@{user.id}>! Missio wants to ask you something 🤖💬
@@ -1031,19 +901,19 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
             """,
             color=discord.Color.dark_teal(),
         )
-        
-        embed.add_field(name=f"Proposal Link" ,value=f"[Click here to view Original Proposal]({url})", inline=False)
-            
+
+        embed.add_field(name=f"Proposal Link",
+                        value=f"[Click here to view Original Proposal]({url})", inline=False)
+
         # edit the embed of the message
-        await thread.send(embed=embed)        
-           
-        
+        await thread.send(embed=embed)
+
         # Add the user to the thread by @ mentioning them
         await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
-            
+
         # Send DM invite link
         # await user.send(inviteLink)
-        
+
         async with thread.typing():
             # fetch completion
             messages = [Message(user=user.name, text=survey_question)]
@@ -1054,10 +924,138 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
             await process_response(
                 user=user, thread=thread, response_data=response_data
             )
-            
+
     except Exception as e:
         logger.error(f"Report command error: {e}")
         return
-    
+
+
+# /query message:
+@tree.command(name="create-forum-post", description="Create a query message to start a conversation in DMs")
+@discord.app_commands.checks.has_permissions(send_messages=True)
+@discord.app_commands.checks.bot_has_permissions(send_messages=True)
+async def create_forum_post_command(int: discord.Interaction, url: str):
+    # DM specific user
+    try:
+
+        # block servers not in allow list
+        if should_block(guild=int.guild):
+            return
+
+        ######################### Discourse URL ############################
+        # Get URL and parse it
+        # Disource URL is a topic URL https://docs.discourse.org/#tag/Topics/operation/getTopic
+
+        # validate domain name
+        domain_name = "https://forum.citydao.io/t/"
+        if not url.startswith(domain_name):
+            logger.info("Invalid URL")
+            return
+
+        # extract ID from URL using regular expressions
+        match = re.search(r'\/\d+', url)
+
+        if match:
+            id = match.group()[1:]  # remove the first slash
+        else:
+            logger.info("No ID found in URL")
+            return
+
+        # Get the topic from Discourse
+        api_url = f'{domain_name}{id}.json'
+
+        headers = {
+            'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
+            'Api-Username': 'system'
+        }
+
+        response = requests.request("GET", api_url, headers=headers)
+
+        if response.status_code != 200:
+            logger.info("Error getting topic from Discourse")
+            return
+
+        json_obj = json.loads(response.text)
+
+        topic_slug = json_obj['post_stream']['posts'][0]['topic_slug']
+
+        post_proposal = json_obj['post_stream']['posts'][0]['cooked']
+
+        embed = discord.Embed(
+            description=f"""
+            Missio is on the job 🤖💬
+            """,
+            color=discord.Color.dark_teal(),
+        )
+
+        # reply to the interaction
+        await int.response.send_message(embed=embed)
+
+        # Summarize the topic
+        survey_summary = await generate_survey_summary(
+            survey_post=post_proposal
+        )
+
+        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+        # Get the topic question from LLM
+        survey_question = await generate_survey_question(
+            survey_post=post_proposal, summary=survey_summary
+        )
+
+        # Create the forum post
+
+        forum_channel = client.get_channel(FORUM_CHANNEL_ID)
+
+        # create forum post
+        thread = await forum_channel.create_thread(
+            name=f"{ACTIVATE_THREAD_PREFX} CityDAO  {survey_question[:30]}",
+            content="This is a Forum Thread",  # Bug in library, this is not working
+            slowmode_delay=1,
+            reason="gpt-bot",
+            auto_archive_duration=60,
+            # type=ChannelType.private_thread
+        )
+
+        # Edit sent embed
+        # embed = discord.Embed(
+        #     description=f"""
+        #     Missio 🤖💬
+
+        #     {topic_slug}
+
+        #     {survey_summary}
+
+        #     {survey_question}
+        #     """,
+        #     color=discord.Color.dark_teal(),
+        # )
+
+        # embed.add_field(name=f"Proposal Link",
+        #                 value=f"[Click here to view Original Proposal]({url})", inline=False)
+
+        # # edit the embed of the message
+        # await thread.send(content="This is a Forum Thread", embed=embed)
+
+        # Add the user to the thread by @ mentioning them
+        # await thread.send(f"This is a Forum Thread>")
+
+        # Send DM invite link
+        # await user.send(inviteLink)
+
+        # async with thread.typing():
+        #     # fetch completion
+        #     messages = [Message(user=user.name, text=survey_question)]
+        #     response_data = await generate_starter_response(
+        #         messages=messages, user=user
+        #     )
+        #     # send the result
+        #     await process_response(
+        #         user=user, thread=thread, response_data=response_data
+        #     )
+
+    except Exception as e:
+        logger.error(f"Report command error: {e}")
+        return
+
 
 client.run(DISCORD_BOT_TOKEN)
