@@ -150,13 +150,13 @@ async def on_member_join(member):
 #     await interaction.user.send("You clicked the button!")
 
 
-@tasks.loop(seconds=5)
-async def pollDiscoure():
-    print("Poll Discourse function being called")
+# @tasks.loop(seconds=5)
+# async def pollDiscoure():
+#     print("Poll Discourse function being called")
 
-    # Check if Discourse has new posts
-    # if there are new posts, send a message to the forum channel
-    # else do nothing
+#     # Check if Discourse has new posts
+#     # if there are new posts, send a message to the forum channel
+#     # else do nothing
 
 
 @client.event
@@ -175,234 +175,234 @@ async def on_ready():
         completion.MY_BOT_EXAMPLE_CONVOS.append(
             Conversation(messages=messages))
     await tree.sync()
-    ping.start()
+    # ping.start()
 
 # Create a report page
 # /report message:
 
 
-@tree.command(name="report", description="Create a report page image and url link")
-async def report_command(int: discord.Interaction, user: discord.Member):
-    try:
-        # Make an embed for the report page
-        embed = discord.Embed(
-            description=f"""
-            <@{user.id}> wants a reportcard! 🤖💬
-            
-            **Report Card** 📝
-            """,
-            color=discord.Color.dark_teal(),
-        )
+# @tree.command(name="report", description="Create a report page image and url link")
+# async def report_command(int: discord.Interaction, user: discord.Member):
+#     try:
+#         # Make an embed for the report page
+#         embed = discord.Embed(
+#             description=f"""
+#             <@{user.id}> wants a reportcard! 🤖💬
 
-        embed.add_field(name=f"{user.name}'s Report Card",
-                        value="[Click here to view your report]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
+#             **Report Card** 📝
+#             """,
+#             color=discord.Color.dark_teal(),
+#         )
 
-        await int.response.send_message(embed=embed)
+#         embed.add_field(name=f"{user.name}'s Report Card",
+#                         value="[Click here to view your report]( https://wandb.ai/slyracoon23/openai-wandb-embedding-table/reports/DAO-Discourse-Results--VmlldzozMjU4NzYx )", inline=False)
 
-    except Exception as e:
-        logger.error(f"Report command error: {e}")
-        return
+#         await int.response.send_message(embed=embed)
+
+#     except Exception as e:
+#         logger.error(f"Report command error: {e}")
+#         return
 
 
 # /query message:
-@tree.command(name="query", description="Create a new thread for Query")
-@discord.app_commands.checks.has_permissions(send_messages=True)
-@discord.app_commands.checks.has_permissions(view_channel=True)
-@discord.app_commands.checks.bot_has_permissions(send_messages=True)
-@discord.app_commands.checks.bot_has_permissions(view_channel=True)
-@discord.app_commands.checks.bot_has_permissions(manage_threads=True)
-async def query_command(int: discord.Interaction, message: str, user: discord.Member):
-    try:
-        # only support creating thread in text channel
-        if not isinstance(int.channel, discord.TextChannel):
-            return
+# @tree.command(name="query", description="Create a new thread for Query")
+# @discord.app_commands.checks.has_permissions(send_messages=True)
+# @discord.app_commands.checks.has_permissions(view_channel=True)
+# @discord.app_commands.checks.bot_has_permissions(send_messages=True)
+# @discord.app_commands.checks.bot_has_permissions(view_channel=True)
+# @discord.app_commands.checks.bot_has_permissions(manage_threads=True)
+# async def query_command(int: discord.Interaction, message: str, user: discord.Member):
+#     try:
+#         # only support creating thread in text channel
+#         if not isinstance(int.channel, discord.TextChannel):
+#             return
 
-        # block servers not in allow list
-        if should_block(guild=int.guild):
-            return
+#         # block servers not in allow list
+#         if should_block(guild=int.guild):
+#             return
 
-        queryor = int.user
-        logger.info(f"Query command by {queryor} {message[:20]} to {user}")
-        try:
-            # moderate the message
-            flagged_str, blocked_str = moderate_message(
-                message=message, user=queryor)
-            await send_moderation_blocked_message(
-                guild=int.guild,
-                user=queryor,
-                blocked_str=blocked_str,
-                message=message,
-            )
-            if len(blocked_str) > 0:
-                # message was blocked
-                await int.response.send_message(
-                    f"Your prompt has been blocked by moderation.\n{message}",
-                    ephemeral=True,
-                )
-                return
+#         queryor = int.user
+#         logger.info(f"Query command by {queryor} {message[:20]} to {user}")
+#         try:
+#             # moderate the message
+#             flagged_str, blocked_str = moderate_message(
+#                 message=message, user=queryor)
+#             await send_moderation_blocked_message(
+#                 guild=int.guild,
+#                 user=queryor,
+#                 blocked_str=blocked_str,
+#                 message=message,
+#             )
+#             if len(blocked_str) > 0:
+#                 # message was blocked
+#                 await int.response.send_message(
+#                     f"Your prompt has been blocked by moderation.\n{message}",
+#                     ephemeral=True,
+#                 )
+#                 return
 
-            # Add thread dialog description
-            embed = discord.Embed(
-                description=f"""
-                <@{queryor.id}> wants to query <@{user.id}>! 🤖💬
-                
-                :writing_hand:  ---> Summarize the conversation
-                
-                :white_check_mark: --->  End chat and submit prompt
-                
-                :x: --->  End chat and delete prompt
-                """,
-                color=discord.Color.green(),
-            )
+#             # Add thread dialog description
+#             embed = discord.Embed(
+#                 description=f"""
+#                 <@{queryor.id}> wants to query <@{user.id}>! 🤖💬
 
-            embed.add_field(name=user.name, value=message)
+#                 :writing_hand:  ---> Summarize the conversation
 
-            if len(flagged_str) > 0:
-                # message was flagged
-                embed.color = discord.Color.yellow()
-                embed.title = "⚠️ This prompt was flagged by moderation."
+#                 :white_check_mark: --->  End chat and submit prompt
 
-            await int.response.send_message(embed=embed)
-            response = await int.original_response()
+#                 :x: --->  End chat and delete prompt
+#                 """,
+#                 color=discord.Color.green(),
+#             )
 
-            await send_moderation_flagged_message(
-                guild=int.guild,
-                user=user,
-                flagged_str=flagged_str,
-                message=message,
-                url=response.jump_url,
-            )
+#             embed.add_field(name=user.name, value=message)
 
-        except Exception as e:
-            logger.exception(e)
-            await int.response.send_message(
-                f"Failed to start chat {str(e)}", ephemeral=True
-            )
-            return
+#             if len(flagged_str) > 0:
+#                 # message was flagged
+#                 embed.color = discord.Color.yellow()
+#                 embed.title = "⚠️ This prompt was flagged by moderation."
 
-          # create the thread
-        thread = await response.create_thread(
-            name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {message[:30]}",
-            slowmode_delay=1,
-            reason="gpt-bot",
-            auto_archive_duration=60,
-        )
+#             await int.response.send_message(embed=embed)
+#             response = await int.original_response()
 
-        async with thread.typing():
-            # fetch completion
-            messages = [Message(user=user.name, text=message)]
-            response_data = await generate_starter_response(
-                messages=messages, user=user
-            )
-            # send the result
-            await process_response(
-                user=user, thread=thread, response_data=response_data
-            )
+#             await send_moderation_flagged_message(
+#                 guild=int.guild,
+#                 user=user,
+#                 flagged_str=flagged_str,
+#                 message=message,
+#                 url=response.jump_url,
+#             )
 
-    except Exception as e:
-        logger.exception(e)
-        await int.response.send_message(
-            f"Failed to start chat {str(e)}", ephemeral=True
-        )
+#         except Exception as e:
+#             logger.exception(e)
+#             await int.response.send_message(
+#                 f"Failed to start chat {str(e)}", ephemeral=True
+#             )
+#             return
+
+#           # create the thread
+#         thread = await response.create_thread(
+#             name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {message[:30]}",
+#             slowmode_delay=1,
+#             reason="gpt-bot",
+#             auto_archive_duration=60,
+#         )
+
+#         async with thread.typing():
+#             # fetch completion
+#             messages = [Message(user=user.name, text=message)]
+#             response_data = await generate_starter_response(
+#                 messages=messages, user=user
+#             )
+#             # send the result
+#             await process_response(
+#                 user=user, thread=thread, response_data=response_data
+#             )
+
+#     except Exception as e:
+#         logger.exception(e)
+#         await int.response.send_message(
+#             f"Failed to start chat {str(e)}", ephemeral=True
+#         )
 
 
 # /chat message:
-@tree.command(name="chat", description="Create a new thread for conversation")
-@discord.app_commands.checks.has_permissions(send_messages=True)
-@discord.app_commands.checks.has_permissions(view_channel=True)
-@discord.app_commands.checks.bot_has_permissions(send_messages=True)
-@discord.app_commands.checks.bot_has_permissions(view_channel=True)
-@discord.app_commands.checks.bot_has_permissions(manage_threads=True)
-async def chat_command(int: discord.Interaction, message: str):
-    try:
-        # only support creating thread in text channel
-        if not isinstance(int.channel, discord.TextChannel):
-            return
+# @tree.command(name="chat", description="Create a new thread for conversation")
+# @discord.app_commands.checks.has_permissions(send_messages=True)
+# @discord.app_commands.checks.has_permissions(view_channel=True)
+# @discord.app_commands.checks.bot_has_permissions(send_messages=True)
+# @discord.app_commands.checks.bot_has_permissions(view_channel=True)
+# @discord.app_commands.checks.bot_has_permissions(manage_threads=True)
+# async def chat_command(int: discord.Interaction, message: str):
+#     try:
+#         # only support creating thread in text channel
+#         if not isinstance(int.channel, discord.TextChannel):
+#             return
 
-        # block servers not in allow list
-        if should_block(guild=int.guild):
-            return
+#         # block servers not in allow list
+#         if should_block(guild=int.guild):
+#             return
 
-        user = int.user
-        logger.info(f"Chat command by {user} {message[:20]}")
-        try:
-            # moderate the message
-            flagged_str, blocked_str = moderate_message(
-                message=message, user=user)
-            await send_moderation_blocked_message(
-                guild=int.guild,
-                user=user,
-                blocked_str=blocked_str,
-                message=message,
-            )
-            if len(blocked_str) > 0:
-                # message was blocked
-                await int.response.send_message(
-                    f"Your prompt has been blocked by moderation.\n{message}",
-                    ephemeral=True,
-                )
-                return
+#         user = int.user
+#         logger.info(f"Chat command by {user} {message[:20]}")
+#         try:
+#             # moderate the message
+#             flagged_str, blocked_str = moderate_message(
+#                 message=message, user=user)
+#             await send_moderation_blocked_message(
+#                 guild=int.guild,
+#                 user=user,
+#                 blocked_str=blocked_str,
+#                 message=message,
+#             )
+#             if len(blocked_str) > 0:
+#                 # message was blocked
+#                 await int.response.send_message(
+#                     f"Your prompt has been blocked by moderation.\n{message}",
+#                     ephemeral=True,
+#                 )
+#                 return
 
-            # Add thread dialog description
-            embed = discord.Embed(
-                description=f"""
-                <@{user.id}> wants to chat! 🤖💬
-                
-                :writing_hand:  ---> Summarize the conversation
-                
-                :white_check_mark: --->  End chat and submit prompt
-                
-                :x: --->  End chat and delete prompt
-                """,
-                color=discord.Color.green(),
-            )
+#             # Add thread dialog description
+#             embed = discord.Embed(
+#                 description=f"""
+#                 <@{user.id}> wants to chat! 🤖💬
 
-            embed.add_field(name=user.name, value=message)
+#                 :writing_hand:  ---> Summarize the conversation
 
-            if len(flagged_str) > 0:
-                # message was flagged
-                embed.color = discord.Color.yellow()
-                embed.title = "⚠️ This prompt was flagged by moderation."
+#                 :white_check_mark: --->  End chat and submit prompt
 
-            await int.response.send_message(embed=embed)
-            response = await int.original_response()
+#                 :x: --->  End chat and delete prompt
+#                 """,
+#                 color=discord.Color.green(),
+#             )
 
-            await send_moderation_flagged_message(
-                guild=int.guild,
-                user=user,
-                flagged_str=flagged_str,
-                message=message,
-                url=response.jump_url,
-            )
-        except Exception as e:
-            logger.exception(e)
-            await int.response.send_message(
-                f"Failed to start chat {str(e)}", ephemeral=True
-            )
-            return
+#             embed.add_field(name=user.name, value=message)
 
-        # create the thread
-        thread = await response.create_thread(
-            name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {message[:30]}",
-            slowmode_delay=1,
-            reason="gpt-bot",
-            auto_archive_duration=60,
-        )
-        async with thread.typing():
-            # fetch completion
-            messages = [Message(user=user.name, text=message)]
-            response_data = await generate_completion_response(
-                messages=messages, user=user
-            )
-            # send the result
-            await process_response(
-                user=user, thread=thread, response_data=response_data
-            )
-    except Exception as e:
-        logger.exception(e)
-        await int.response.send_message(
-            f"Failed to start chat {str(e)}", ephemeral=True
-        )
+#             if len(flagged_str) > 0:
+#                 # message was flagged
+#                 embed.color = discord.Color.yellow()
+#                 embed.title = "⚠️ This prompt was flagged by moderation."
+
+#             await int.response.send_message(embed=embed)
+#             response = await int.original_response()
+
+#             await send_moderation_flagged_message(
+#                 guild=int.guild,
+#                 user=user,
+#                 flagged_str=flagged_str,
+#                 message=message,
+#                 url=response.jump_url,
+#             )
+#         except Exception as e:
+#             logger.exception(e)
+#             await int.response.send_message(
+#                 f"Failed to start chat {str(e)}", ephemeral=True
+#             )
+#             return
+
+#         # create the thread
+#         thread = await response.create_thread(
+#             name=f"{ACTIVATE_THREAD_PREFX} {user.name[:20]} - {message[:30]}",
+#             slowmode_delay=1,
+#             reason="gpt-bot",
+#             auto_archive_duration=60,
+#         )
+#         async with thread.typing():
+#             # fetch completion
+#             messages = [Message(user=user.name, text=message)]
+#             response_data = await generate_completion_response(
+#                 messages=messages, user=user
+#             )
+#             # send the result
+#             await process_response(
+#                 user=user, thread=thread, response_data=response_data
+#             )
+#     except Exception as e:
+#         logger.exception(e)
+#         await int.response.send_message(
+#             f"Failed to start chat {str(e)}", ephemeral=True
+#         )
 
 
 # calls for each message
@@ -641,73 +641,73 @@ async def on_message(message: DiscordMessage):
 
             # Recieve all responses from the database
 
-            def wandb_run(project_name):
-                # Use the scan method to fetch all items in the table
-                response = table.scan()
+            # def wandb_run(project_name):
+            #     # Use the scan method to fetch all items in the table
+            #     response = table.scan()
 
-                # Iterate through the items and print the summary field
-                # for item in response['Items']:
-                #     print(item['Attestation'])
+            #     # Iterate through the items and print the summary field
+            #     # for item in response['Items']:
+            #     #     print(item['Attestation'])
 
-                items = response['Items']
+            #     items = response['Items']
 
-                docs = map(lambda x: x['Attestation'], items)
+            #     docs = map(lambda x: x['Attestation'], items)
 
-                if len(items) > 20:
-                    docs = docs * 10
+            #     if len(items) > 20:
+            #         docs = docs * 10
 
-                    # embedding
-                    sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
-                    embeddings = sentence_model.encode(
-                        docs, show_progress_bar=False)
+            #         # embedding
+            #         sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+            #         embeddings = sentence_model.encode(
+            #             docs, show_progress_bar=False)
 
-                    # Remove en
-                    vectorizer_model = CountVectorizer(stop_words="english")
-                    # Train BERTopic
-                    topic_model = BERTopic(
-                        vectorizer_model=vectorizer_model).fit(docs, embeddings)
-                    # hierarchical_topics = topic_model.hierarchical_topics(docs)
+            #         # Remove en
+            #         vectorizer_model = CountVectorizer(stop_words="english")
+            #         # Train BERTopic
+            #         topic_model = BERTopic(
+            #             vectorizer_model=vectorizer_model).fit(docs, embeddings)
+            #         # hierarchical_topics = topic_model.hierarchical_topics(docs)
 
-                    fig_bar_chart = topic_model.visualize_barchart()
+            #         fig_bar_chart = topic_model.visualize_barchart()
 
-                    # Run the visualization with the original embeddings
-                    fig_embedding = topic_model.visualize_documents(
-                        docs, embeddings=embeddings)
+            #         # Run the visualization with the original embeddings
+            #         fig_embedding = topic_model.visualize_documents(
+            #             docs, embeddings=embeddings)
 
-                df = pd.DataFrame(items)
+            #     df = pd.DataFrame(items)
 
-                df['id'] = pd.to_numeric(df['id'])
+            #     df['id'] = pd.to_numeric(df['id'])
 
-                df['DiscordID'] = pd.to_numeric(df['DiscordID'])
+            #     df['DiscordID'] = pd.to_numeric(df['DiscordID'])
 
-                df['ServerID'] = pd.to_numeric(df['ServerID'])
+            #     df['ServerID'] = pd.to_numeric(df['ServerID'])
 
-                # Initialize a new run
-                run = wandb.init(project=project_name,
-                                 entity="identi3", name="BERT Topic Model")
+            #     # Initialize a new run
+            #     run = wandb.init(project=project_name,
+            #                      entity="identi3", name="BERT Topic Model")
 
-                run.log({"Table": df})
+            #     run.log({"Table": df})
 
-                if len(items) > 20:
-                    # Log Table
-                    run.log({"Topic-Embedded-Chart": fig_embedding})
+            #     if len(items) > 20:
+            #         # Log Table
+            #         run.log({"Topic-Embedded-Chart": fig_embedding})
 
-                    run.log({"Topic-Bar-Chart": fig_bar_chart})
+            #         run.log({"Topic-Bar-Chart": fig_bar_chart})
 
-                wandb.finish()
+            #     wandb.finish()
 
-                return run.get_url()
+            #     return run.get_url()
 
-            wandb_url = wandb_run(projectName)
+            # wandb_url = wandb_run(projectName)
 
-            embed = discord.Embed(
-                description=f"""
-            Your report run is complete! You can view the results at {wandb_url}
-            """,
-                color=discord.Color.dark_teal(),
-            )
-            # edit the embed of the message
-            await thread.send(embed=embed)
+            # embed = discord.Embed(
+            #     description=f"""
+            # Your report run is complete! You can view the results at {wandb_url}
+            # """,
+            #     color=discord.Color.dark_teal(),
+            # )
+            # # edit the embed of the message
+            # await thread.send(embed=embed)
 
         # send response
         await process_response(
@@ -718,107 +718,107 @@ async def on_message(message: DiscordMessage):
 
 
 # /query message:
-@tree.command(name="survey", description="Create a query message to start a conversation in DMs")
-@discord.app_commands.checks.has_permissions(send_messages=True)
-@discord.app_commands.checks.bot_has_permissions(send_messages=True)
-async def survey_command(int: discord.Interaction, project_name: str, user: discord.User):
-    # DM specific user
-    try:
+# @tree.command(name="survey", description="Create a query message to start a conversation in DMs")
+# @discord.app_commands.checks.has_permissions(send_messages=True)
+# @discord.app_commands.checks.bot_has_permissions(send_messages=True)
+# async def survey_command(int: discord.Interaction, project_name: str, user: discord.User):
+#     # DM specific user
+#     try:
 
-        # only support creating thread in text channel
-        if not isinstance(int.channel, discord.TextChannel):
-            return
+#         # only support creating thread in text channel
+#         if not isinstance(int.channel, discord.TextChannel):
+#             return
 
-        # block servers not in allow list
-        if should_block(guild=int.guild):
-            return
+#         # block servers not in allow list
+#         if should_block(guild=int.guild):
+#             return
 
-        for project in project_list:
+#         for project in project_list:
 
-            if project["project-name"].lower() == project_name.lower():
+#             if project["project-name"].lower() == project_name.lower():
 
-                # Switch statement to check if URL is valid
-                project_name = project["project-name"]
-                # Summarize the survey hard coded
-                survey_summary = project["project-summary"]
+#                 # Switch statement to check if URL is valid
+#                 project_name = project["project-name"]
+#                 # Summarize the survey hard coded
+#                 survey_summary = project["project-summary"]
 
-                # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
-                # Get the topic qquestion hardcoded
+#                 # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+#                 # Get the topic qquestion hardcoded
 
-                survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
+#                 survey_question = f"Survey: What do you think about {project_name}? What value would the project bring to you?"
 
-                project_url = project["project-url"]
+#                 project_url = project["project-url"]
 
-                break
+#                 break
 
-        else:
-            await int.response.send_message("Project not found")
-            return
+#         else:
+#             await int.response.send_message("Project not found")
+#             return
 
-        embed = discord.Embed(
-            description=f"""
-            Missio is on the job 🤖💬
-            """,
-            color=discord.Color.dark_teal(),
-        )
+#         embed = discord.Embed(
+#             description=f"""
+#             Missio is on the job 🤖💬
+#             """,
+#             color=discord.Color.dark_teal(),
+#         )
 
-        # reply to the interaction
-        await int.response.send_message(embed=embed)
+#         # reply to the interaction
+#         await int.response.send_message(embed=embed)
 
-       # 33
+#        # 33
 
-        text_channel = client.get_channel(CHANNEL_ID)
+#         text_channel = client.get_channel(CHANNEL_ID)
 
-        # create private thread
-        thread = await text_channel.create_thread(
-            name=f"{ACTIVATE_THREAD_PREFX} {project_name} {user.name[:20]} - {survey_question[:30]}",
-            slowmode_delay=1,
-            reason="gpt-bot",
-            auto_archive_duration=60,
-            type=ChannelType.private_thread
-        )
+#         # create private thread
+#         thread = await text_channel.create_thread(
+#             name=f"{ACTIVATE_THREAD_PREFX} {project_name} {user.name[:20]} - {survey_question[:30]}",
+#             slowmode_delay=1,
+#             reason="gpt-bot",
+#             auto_archive_duration=60,
+#             type=ChannelType.private_thread
+#         )
 
-        # Edit sent embed
-        embed = discord.Embed(
-            description=f"""
-            Hey <@{user.id}>! Missio wants to ask you something 🤖💬
-            
-            {project_name}
-            
-            {survey_summary}
-            
-            {survey_question}
-            """,
-            color=discord.Color.dark_teal(),
-        )
+#         # Edit sent embed
+#         embed = discord.Embed(
+#             description=f"""
+#             Hey <@{user.id}>! Missio wants to ask you something 🤖💬
 
-        embed.add_field(name=f"Project Link",
-                        value=f"[Click here to view the Project]({project_url})", inline=False)
+#             {project_name}
 
-        # edit the embed of the message
-        await thread.send(embed=embed)
+#             {survey_summary}
 
-        # Add the user to the thread by @ mentioning them
-        await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
+#             {survey_question}
+#             """,
+#             color=discord.Color.dark_teal(),
+#         )
 
-        # Send DM invite link
-        # await user.send(inviteLink)
+#         embed.add_field(name=f"Project Link",
+#                         value=f"[Click here to view the Project]({project_url})", inline=False)
 
-        async with thread.typing():
-            # fetch completion
-            messages = [Message(user=user.name, text=(
-                project_name + '\n' + survey_summary + '\n' + survey_question))]
-            response_data = await generate_starter_response(
-                messages=messages, user=user
-            )
-            # send the result
-            await process_response(
-                user=user, thread=thread, response_data=response_data
-            )
+#         # edit the embed of the message
+#         await thread.send(embed=embed)
 
-    except Exception as e:
-        logger.error(f"Report command error: {e}")
-        return
+#         # Add the user to the thread by @ mentioning them
+#         await thread.send(f"This is a private thread. Only you and the bot can see this thread. <@{user.id}>")
+
+#         # Send DM invite link
+#         # await user.send(inviteLink)
+
+#         async with thread.typing():
+#             # fetch completion
+#             messages = [Message(user=user.name, text=(
+#                 project_name + '\n' + survey_summary + '\n' + survey_question))]
+#             response_data = await generate_starter_response(
+#                 messages=messages, user=user
+#             )
+#             # send the result
+#             await process_response(
+#                 user=user, thread=thread, response_data=response_data
+#             )
+
+#     except Exception as e:
+#         logger.error(f"Report command error: {e}")
+#         return
 
 
 # /query message:
