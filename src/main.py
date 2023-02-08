@@ -110,7 +110,7 @@ class SimpleView(discord.ui.View):
         await interaction.user.send("You clicked the button!")
 
 
-class ForumView(discord.ui.View):
+class ForumView(discord.ui.View(timeout=None)):
 
     @discord.ui.button(label="Survey: Voice your opinion!")
     async def survey_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1146,6 +1146,7 @@ async def create_forum_post_command(int: discord.Interaction, url: str):
 
 
                         value=f"[Click here to view Original Proposal]({url})", inline=False)
+
         forumView = ForumView()
 
         # create forum post
