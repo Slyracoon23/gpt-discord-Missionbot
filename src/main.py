@@ -110,7 +110,10 @@ class SimpleView(discord.ui.View):
         await interaction.user.send("You clicked the button!")
 
 
-class ForumView(discord.ui.View(timeout=None)):
+class ForumView(discord.ui.View):
+
+    def __init__(self):
+        super().__init__(timeout=None)
 
     @discord.ui.button(label="Survey: Voice your opinion!")
     async def survey_button(self, interaction: discord.Interaction, button: discord.ui.Button):
