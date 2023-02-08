@@ -121,9 +121,10 @@ class SimpleView(discord.ui.View):
 class ForumView(discord.ui.View):
 
     @discord.ui.button(label="Survey: Voice your opinion!")
-    async def hello(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def survey_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("You asked to parcipate in a Survey!", ephemeral=True)
-        await survey_discourse_command_manual(interaction, "https://forum.citydao.io/t/citydao-legal-transparency-and-accountability-project/1944/7", interaction.user)
+        discourse_topic_id = interaction.channel.name.split()[0]
+        await survey_discourse_command_manual(interaction, discourse_topic_id, interaction.user)
 
 
 # Possibly create an ephemeral message
@@ -700,14 +701,14 @@ async def on_message(message: DiscordMessage):
 
             # wandb_url = wandb_run(projectName)
 
-            # embed = discord.Embed(
-            #     description=f"""
-            # Your report run is complete! You can view the results at {wandb_url}
-            # """,
-            #     color=discord.Color.dark_teal(),
-            # )
-            # # edit the embed of the message
-            # await thread.send(embed=embed)
+            embed = discord.Embed(
+                description=f"""
+            Your conversation is Saved! Thank you for your time.
+            """,
+                color=discord.Color.dark_teal(),
+            )
+            # edit the embed of the message
+            await thread.send(embed=embed)
 
         # send response
         await process_response(
@@ -950,7 +951,7 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
         return
 
 
-async def survey_discourse_command_manual(int: discord.Interaction, url: str, user: discord.User):
+async def survey_discourse_command_manual(int: discord.Interaction, discourse_topic_id: str, user: discord.User):
     # DM specific user
     try:
 
@@ -964,21 +965,9 @@ async def survey_discourse_command_manual(int: discord.Interaction, url: str, us
 
         # validate domain name
         domain_name = "https://forum.citydao.io/t/"
-        if not url.startswith(domain_name):
-            logger.info("Invalid URL")
-            return
-
-        # extract ID from URL using regular expressions
-        match = re.search(r'\/\d+', url)
-
-        if match:
-            id = match.group()[1:]  # remove the first slash
-        else:
-            logger.info("No ID found in URL")
-            return
 
         # Get the topic from Discourse
-        api_url = f'{domain_name}{id}.json'
+        api_url = f'{domain_name}{discourse_topic_id}.json'
 
         headers = {
             'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
@@ -1042,6 +1031,8 @@ async def survey_discourse_command_manual(int: discord.Interaction, url: str, us
             """,
             color=discord.Color.dark_teal(),
         )
+
+        url = f'{domain_name}{discourse_topic_id}'
 
         embed.add_field(name=f"Proposal Link",
                         value=f"[Click here to view Original Proposal]({url})", inline=False)
@@ -1167,7 +1158,7 @@ async def create_forum_post_command(int: discord.Interaction, url: str):
 
         # create forum post
         thread = await forum_channel.create_thread(
-            name=f"CityDAO  {topic_slug}",
+            name=f"{id} CityDAO:{topic_slug}",
             # content="This is a Forum Thread",  # Bug in library, this is not working
             slowmode_delay=1,
             reason="gpt-bot",
