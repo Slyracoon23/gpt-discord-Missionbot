@@ -49,14 +49,6 @@ import json
 import jsonlines
 
 
-import wandb
-import pandas as pd
-from sklearn.datasets import fetch_20newsgroups
-from sentence_transformers import SentenceTransformer
-from bertopic import BERTopic
-# from umap import UMAP
-from sklearn.feature_extraction.text import CountVectorizer
-
 import boto3
 import json
 import decimal
