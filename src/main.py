@@ -117,9 +117,9 @@ class ForumView(discord.ui.View):
 
     @discord.ui.button(label="Survey: Voice your opinion!")
     async def survey_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("You asked to parcipate in a Survey!", ephemeral=True)
         discourse_topic_id = interaction.channel.name.split()[0]
-        await survey_discourse_command_manual(interaction, discourse_topic_id, interaction.user)
+        await interaction.response.send_message(f"You asked to parcipate in a Survey! ID: {discourse_topic_id}", ephemeral=True)
+        # await survey_discourse_command_manual(interaction, discourse_topic_id, interaction.user)
 
 
 # Possibly create an ephemeral message
@@ -146,13 +146,54 @@ async def on_member_join(member):
 #     await interaction.user.send("You clicked the button!")
 
 
-# @tasks.loop(seconds=5)
-# async def pollDiscoure():
-#     print("Poll Discourse function being called")
+@tasks.loop(seconds=180)
+async def pollDiscoure():
+    print("Poll Discourse function being called")
 
-#     # Check if Discourse has new posts
-#     # if there are new posts, send a message to the forum channel
-#     # else do nothing
+    # Get all threads id
+    forum_channel = client.get_channel(FORUM_CHANNEL_ID)
+
+    print("Forum channel: ", forum_channel)
+
+    discord_topic_id = []
+    for thread in forum_channel.threads:
+        discord_topic_id.append(thread.name.split()[0])
+
+    print("Discourse topic id: ", discord_topic_id)
+
+    # Get all post ids from discourse
+
+    # Get the topic from Discourse
+    api_url = "https://forum.citydao.io/latest.json"
+
+    headers = {
+        'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
+        'Api-Username': 'system'
+    }
+
+    response = requests.request("GET", api_url, headers=headers)
+
+    if response.status_code != 200:
+        logger.info("Error getting topic from Discourse")
+        return
+
+    json_obj = json.loads(response.text)
+
+    topic_list = json_obj["topic_list"]["topics"]
+
+    discourse_topic_id_list = list(
+        map(lambda topic: str(topic["id"]), topic_list))
+
+    # Get all topic ids that are not already included in the channel
+    topic_id_to_be_included = list(
+        set(discourse_topic_id_list).symmetric_difference(set(discord_topic_id)))
+
+    # Inlcude the new topics in the channel
+
+    print("Topic id to be included: ", topic_id_to_be_included)
+
+    for topic_id in topic_id_to_be_included[:3]:
+        await create_forum_post_manual(topic_id)
 
 
 @client.event
@@ -171,7 +212,7 @@ async def on_ready():
         completion.MY_BOT_EXAMPLE_CONVOS.append(
             Conversation(messages=messages))
     await tree.sync()
-    # ping.start()
+    pollDiscoure.start()
 
 # Create a report page
 # /report message:
@@ -949,7 +990,6 @@ async def survey_discourse_command(int: discord.Interaction, url: str, user: dis
 async def survey_discourse_command_manual(int: discord.Interaction, discourse_topic_id: str, user: discord.User):
     # DM specific user
     try:
-
         # block servers not in allow list
         if should_block(guild=int.guild):
             return
@@ -1154,7 +1194,7 @@ async def create_forum_post_command(int: discord.Interaction, url: str):
 
         # create forum post
         thread = await forum_channel.create_thread(
-            name=f"{id} CityDAO:{topic_slug}",
+            name=f"{id} CityDAO:{topic_slug[:30]}",
             # content="This is a Forum Thread",  # Bug in library, this is not working
             slowmode_delay=1,
             reason="gpt-bot",
@@ -1190,5 +1230,86 @@ async def create_forum_post_command(int: discord.Interaction, url: str):
         logger.error(f"Report command error: {e}")
         return
 
+
+async def create_forum_post_manual(topic_id: str):
+    # DM specific user
+    try:
+
+        ######################### Discourse URL ############################
+        # Get URL and parse it
+        # Disource URL is a topic URL https://docs.discourse.org/#tag/Topics/operation/getTopic
+
+        # validate domain name
+        domain_name = "https://forum.citydao.io/t/"
+
+        # Get the topic from Discourse
+        api_url = f'{domain_name}{topic_id}.json'
+
+        headers = {
+            'Api-Key': '82fe71fa8cfc68f59a9582b1c3561c1cb5f4da634585877f09927c30889cd318',
+            'Api-Username': 'system'
+        }
+
+        response = requests.request("GET", api_url, headers=headers)
+
+        if response.status_code != 200:
+            logger.info("Error getting topic from Discourse")
+            return
+
+        json_obj = json.loads(response.text)
+
+        topic_slug = json_obj['post_stream']['posts'][0]['topic_slug']
+
+        post_proposal = json_obj['post_stream']['posts'][0]['cooked']
+
+        # Summarize the topic
+        survey_summary = await generate_survey_summary(
+            survey_post=post_proposal
+        )
+
+        # PROMPT: You're a helpful survyor bot. The master wants to ask the members of the DAO specific question regarding the following proposal. Your task is to analyse the following text and output a list of 5 questions that asks the DAO member his opinion about the proposal. Start off each question `Survey: `.
+        # Get the topic question from LLM
+        survey_question = await generate_survey_question(
+            survey_post=post_proposal, summary=survey_summary
+        )
+
+        # Create the forum post
+
+        forum_channel = client.get_channel(FORUM_CHANNEL_ID)
+
+        embed = discord.Embed(
+            description=f"""
+            Missio 🤖💬
+
+            {topic_slug}
+
+            {survey_summary}
+
+            {survey_question}
+            """,
+            color=discord.Color.dark_teal(),
+        )
+
+        url = f"https://forum.citydao.io/t/{topic_id}"
+        embed.add_field(name=f"Proposal Link",
+                        value=f"[Click here to view Original Proposal]({url})", inline=False)
+
+        forumView = ForumView()
+
+        # create forum post
+        thread = await forum_channel.create_thread(
+            name=f"{topic_id} CityDAO:{topic_slug[:30]}",
+            # content="This is a Forum Thread",  # Bug in library, this is not working
+            slowmode_delay=1,
+            reason="gpt-bot",
+            embed=embed,
+            view=forumView,
+            auto_archive_duration=60,
+            # type=ChannelType.private_thread
+        )
+
+    except Exception as e:
+        logger.error(f"Report command error: {e}")
+        return
 
 client.run(DISCORD_BOT_TOKEN)
